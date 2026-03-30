@@ -11,7 +11,8 @@ import {
   getStreakCount,
   upsertDailyMetrics,
   getMetricsByDate,
-} from "../db/queries.js";
+  isDemoUser,
+} from "../db/store.js";
 import { fetchAllMetrics } from "./whoop.js";
 
 function calculateMood(metrics: DailyMetrics): CreatureMood {
@@ -54,6 +55,33 @@ function calculateTraits(metrics: DailyMetrics, streak: number): string[] {
   return traits;
 }
 
+function generateDemoMetrics(): {
+  recovery: number;
+  sleep_score: number;
+  strain: number;
+  hrv: number;
+  rhr: number;
+} {
+  // Seeded from the day so the demo creature is consistent within a day
+  const daySeed = new Date().toISOString().split("T")[0];
+  let hash = 0;
+  for (let i = 0; i < daySeed.length; i++) {
+    hash = (hash * 31 + daySeed.charCodeAt(i)) | 0;
+  }
+  const rand = (min: number, max: number) => {
+    hash = (hash * 16807 + 7) | 0;
+    return min + Math.abs(hash % (max - min + 1));
+  };
+
+  return {
+    recovery: rand(40, 95),
+    sleep_score: rand(50, 98),
+    strain: parseFloat((rand(5, 18) + rand(0, 9) / 10).toFixed(1)),
+    hrv: rand(30, 120),
+    rhr: rand(48, 72),
+  };
+}
+
 export async function updateCreature(
   userId: string,
   date: string
@@ -64,7 +92,6 @@ export async function updateCreature(
     const fetchedAt = new Date(metrics.fetched_at).getTime();
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
     if (fetchedAt > oneHourAgo) {
-      // Return cached creature state
       const creature = getLatestCreature(userId);
       if (creature && creature.date === date) {
         return buildDisplay(creature, metrics);
@@ -72,8 +99,21 @@ export async function updateCreature(
     }
   }
 
-  // Fetch fresh data from WHOOP
-  const whoopData = await fetchAllMetrics(userId);
+  // Fetch data — demo mode uses generated metrics, real mode hits WHOOP
+  let whoopData: {
+    recovery: number;
+    sleep_score: number;
+    strain: number;
+    hrv: number;
+    rhr: number;
+  };
+
+  if (isDemoUser(userId)) {
+    whoopData = generateDemoMetrics();
+  } else {
+    whoopData = await fetchAllMetrics(userId);
+  }
+
   metrics = upsertDailyMetrics(
     userId,
     date,

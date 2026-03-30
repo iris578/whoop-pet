@@ -1,12 +1,11 @@
 import { CronJob } from "cron";
-import { getAllUsers } from "../db/queries.js";
+import { getAllUsers, isDemoUser } from "../db/store.js";
 import { updateCreature } from "./creature.js";
 
 export function startCronJobs() {
-  // Run daily at 8am UTC - fetch metrics for all users
   const dailyFetch = new CronJob("0 8 * * *", async () => {
     console.log("[cron] Starting daily metrics fetch...");
-    const users = getAllUsers();
+    const users = getAllUsers().filter((u) => !isDemoUser(u.id));
     const today = new Date().toISOString().split("T")[0];
 
     for (const user of users) {

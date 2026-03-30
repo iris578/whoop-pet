@@ -1,11 +1,23 @@
 import { Router } from "express";
 import { getAuthUrl, exchangeCode } from "../services/whoop.js";
-import { createUser } from "../db/queries.js";
+import { createUser } from "../db/store.js";
 
 const router = Router();
 
+// Check if WHOOP is configured
+function whoopConfigured(): boolean {
+  return !!(process.env.WHOOP_CLIENT_ID && process.env.WHOOP_CLIENT_SECRET);
+}
+
 // Redirect to WHOOP OAuth
-router.get("/whoop", (_req, res) => {
+router.get("/whoop", (req, res) => {
+  if (!whoopConfigured()) {
+    res.status(400).json({
+      error: "WHOOP not configured",
+      message: "Set WHOOP_CLIENT_ID and WHOOP_CLIENT_SECRET environment variables to enable WHOOP integration.",
+    });
+    return;
+  }
   res.redirect(getAuthUrl());
 });
 
@@ -20,7 +32,7 @@ router.get("/whoop/callback", async (req, res) => {
 
     const tokens = await exchangeCode(code);
 
-    // Get WHOOP user profile to get their user ID
+    // Get WHOOP user profile
     const profileRes = await fetch(
       "https://api.prod.whoop.com/developer/v1/user/profile/basic",
       { headers: { Authorization: `Bearer ${tokens.access_token}` } }
@@ -48,6 +60,11 @@ router.get("/whoop/callback", async (req, res) => {
     console.error("OAuth callback error:", err);
     res.status(500).json({ error: "Authentication failed" });
   }
+});
+
+// Status endpoint
+router.get("/status", (_req, res) => {
+  res.json({ whoop_configured: whoopConfigured() });
 });
 
 export default router;

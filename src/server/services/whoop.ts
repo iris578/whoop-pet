@@ -4,7 +4,7 @@ import type {
   WhoopSleep,
   WhoopStrain,
 } from "../../shared/types.js";
-import { updateUserTokens, getUserById } from "../db/queries.js";
+import { updateUserTokens, getUserById } from "../db/store.js";
 
 const WHOOP_API = "https://api.prod.whoop.com";
 const WHOOP_AUTH = "https://api.prod.whoop.com/oauth/oauth2";

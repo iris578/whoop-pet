@@ -5,7 +5,6 @@ import path from "path";
 import authRoutes from "./routes/auth.js";
 import apiRoutes from "./routes/api.js";
 import { startCronJobs } from "./services/cron.js";
-import { getDb } from "./db/schema.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000");
@@ -14,7 +13,7 @@ const PORT = parseInt(process.env.PORT || "3000");
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// Simple cookie parser (no dependency needed)
+// Simple cookie parser
 app.use((req, _res, next) => {
   const cookieHeader = req.headers.cookie;
   (req as any).cookies = {};
@@ -38,9 +37,10 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
 });
 
-// Initialize
-getDb(); // Ensure schema is created
-startCronJobs();
+// Start cron only if WHOOP is configured (not in demo-only mode)
+if (process.env.WHOOP_CLIENT_ID) {
+  startCronJobs();
+}
 
 app.listen(PORT, () => {
   console.log(`🐾 BodyPet server running on http://localhost:${PORT}`);

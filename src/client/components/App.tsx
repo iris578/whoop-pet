@@ -1,7 +1,6 @@
 import React from "react";
 import { useCreature } from "../hooks/useCreature.js";
 import { CreatureView } from "./CreatureView.js";
-import { LoginScreen } from "./LoginScreen.js";
 
 const styles: Record<string, React.CSSProperties> = {
   app: {
@@ -41,10 +40,36 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "100px",
     textAlign: "center" as const,
   },
+  demoBanner: {
+    background: "rgba(255, 217, 61, 0.15)",
+    border: "1px solid rgba(255, 217, 61, 0.3)",
+    borderRadius: "10px",
+    padding: "12px 20px",
+    marginBottom: "16px",
+    textAlign: "center" as const,
+    fontSize: "0.85rem",
+    color: "#ffd93d",
+    maxWidth: "480px",
+    width: "100%",
+  },
+  connectBtn: {
+    display: "inline-block",
+    marginTop: "8px",
+    padding: "8px 20px",
+    background: "linear-gradient(135deg, #4d96ff, #6bcb77)",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontFamily: "'Courier New', monospace",
+    fontWeight: "bold",
+    fontSize: "0.85rem",
+    textDecoration: "none",
+  },
 };
 
 export function App() {
-  const { display, status, authUrl, refresh } = useCreature();
+  const { display, status, isDemo, refresh } = useCreature();
 
   return (
     <div style={styles.app}>
@@ -70,8 +95,6 @@ export function App() {
         <div style={styles.loading}>Loading your creature...</div>
       )}
 
-      {status === "unauthenticated" && <LoginScreen authUrl={authUrl} />}
-
       {status === "error" && (
         <div style={styles.error}>
           <p>Something went wrong!</p>
@@ -94,7 +117,18 @@ export function App() {
       )}
 
       {status === "ready" && display && (
-        <CreatureView display={display} onRefresh={refresh} />
+        <>
+          {isDemo && (
+            <div style={styles.demoBanner}>
+              Demo Mode — Using simulated health data
+              <br />
+              <a href="/auth/whoop" style={styles.connectBtn}>
+                Connect WHOOP for Real Data
+              </a>
+            </div>
+          )}
+          <CreatureView display={display} onRefresh={refresh} />
+        </>
       )}
     </div>
   );
