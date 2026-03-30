@@ -1,7 +1,10 @@
 import Database from "better-sqlite3";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "bodypet.db");
+const isVercel = !!process.env.VERCEL;
+const DB_PATH = isVercel
+  ? path.join("/tmp", "bodypet.db")
+  : path.join(process.cwd(), "bodypet.db");
 
 let db: Database.Database;
 

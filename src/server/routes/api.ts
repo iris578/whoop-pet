@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { updateCreature } from "../services/creature.js";
-import { getUserById, getLatestCreature, getRecentMetrics } from "../db/queries.js";
+import { getUserById, getLatestCreature, getRecentMetrics, upsertCreatureState } from "../db/queries.js";
 
 const router = Router();
 
@@ -83,7 +83,6 @@ router.post("/creature/name", requireUser, (req: Request, res: Response) => {
     // Update via the creature engine on next refresh
     const creature = getLatestCreature(userId);
     if (creature) {
-      const { upsertCreatureState } = require("../db/queries.js");
       upsertCreatureState({ ...creature, name, traits: creature.traits });
     }
     res.json({ name });
