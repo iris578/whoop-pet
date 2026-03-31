@@ -28,9 +28,9 @@ function Hearts({ hp }: { hp: number }) {
             style={{
               fontSize: "18px",
               lineHeight: 1,
-              color: isFilled ? "#e74c6f" : "#d4c9a8",
-              filter: isFilled ? "none" : "grayscale(1)",
-              opacity: isFilled ? 1 : 0.4,
+              color: isFilled ? "#e74c6f" : "#a09080",
+              filter: "none",
+              opacity: isFilled ? 1 : 0.6,
             }}
           >
             {isFilled ? "♥" : "♡"}
