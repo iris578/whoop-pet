@@ -204,8 +204,7 @@ export function CreatureView({
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            minHeight: "120px",
-            padding: "10px 0",
+            padding: "4px 0",
           }}
         >
           <PixelDog
