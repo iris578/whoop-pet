@@ -196,47 +196,21 @@ const EGG_DEAD: string[] = [
   "......xxxxxxxx..........",
 ];
 
+const DOG_MOODS: Record<Mood, string[]> = {
+  thriving: DOG_THRIVING,
+  happy: DOG_HAPPY,
+  neutral: DOG_NEUTRAL,
+  tired: DOG_TIRED,
+  struggling: DOG_STRUGGLING,
+  dead: DOG_DEAD,
+};
+
 const DOGS: Record<Stage, Record<Mood, string[]>> = {
-  egg: {
-    thriving: EGG_THRIVING,
-    happy: EGG_HAPPY,
-    neutral: EGG_HAPPY,
-    tired: EGG_HAPPY,
-    struggling: EGG_HAPPY,
-    dead: EGG_DEAD,
-  },
-  baby: {
-    thriving: DOG_THRIVING,
-    happy: DOG_HAPPY,
-    neutral: DOG_NEUTRAL,
-    tired: DOG_TIRED,
-    struggling: DOG_STRUGGLING,
-    dead: DOG_DEAD,
-  },
-  teen: {
-    thriving: DOG_THRIVING,
-    happy: DOG_HAPPY,
-    neutral: DOG_NEUTRAL,
-    tired: DOG_TIRED,
-    struggling: DOG_STRUGGLING,
-    dead: DOG_DEAD,
-  },
-  adult: {
-    thriving: DOG_THRIVING,
-    happy: DOG_HAPPY,
-    neutral: DOG_NEUTRAL,
-    tired: DOG_TIRED,
-    struggling: DOG_STRUGGLING,
-    dead: DOG_DEAD,
-  },
-  legendary: {
-    thriving: DOG_THRIVING,
-    happy: DOG_HAPPY,
-    neutral: DOG_NEUTRAL,
-    tired: DOG_TIRED,
-    struggling: DOG_STRUGGLING,
-    dead: DOG_DEAD,
-  },
+  egg: DOG_MOODS,
+  baby: DOG_MOODS,
+  teen: DOG_MOODS,
+  adult: DOG_MOODS,
+  legendary: DOG_MOODS,
 };
 
 const PIXEL_SIZE = 5;
