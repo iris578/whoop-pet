@@ -249,8 +249,6 @@ const DOGS: Record<Stage, Record<Mood, string[]>> = {
   legendary: DOG_MOODS,
 };
 
-const PIXEL_SIZE = 5;
-
 interface PixelDogProps {
   mood: string;
   evolutionStage: string;
@@ -261,17 +259,18 @@ export function PixelDog({ mood, evolutionStage, isAlive }: PixelDogProps) {
   const stage = (evolutionStage || "egg") as Stage;
   const m = (isAlive ? (mood || "neutral") : "dead") as Mood;
   const grid = DOGS[stage]?.[m] || DOGS.egg.neutral;
+  const px = stage === "egg" ? 7 : 5;
 
   return (
     <div style={{ display: "inline-block", imageRendering: "pixelated" as any }}>
       {grid.map((row, y) => (
-        <div key={y} style={{ display: "flex", height: PIXEL_SIZE }}>
+        <div key={y} style={{ display: "flex", height: px }}>
           {row.split("").map((ch, x) => (
             <div
               key={x}
               style={{
-                width: PIXEL_SIZE,
-                height: PIXEL_SIZE,
+                width: px,
+                height: px,
                 backgroundColor: PALETTE[ch] || "transparent",
               }}
             />
