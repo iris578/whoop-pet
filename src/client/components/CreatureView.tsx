@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { CreatureDisplay } from "../../shared/types.js";
 import { PixelDog } from "./PixelDog.js";
+import { TamagotchiShell } from "./TamagotchiShell.js";
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -157,18 +158,34 @@ export function CreatureView({
 
   return (
     <div style={styles.container}>
-      {/* Creature Display */}
-      <div style={styles.creatureBox}>
+      {/* Tamagotchi */}
+      <TamagotchiShell
+        moodColor={moodColor}
+        onButtonA={onRefresh}
+        onButtonB={onRefresh}
+        onButtonC={handleShare}
+      >
         <PixelDog
           mood={creature.mood}
           evolutionStage={creature.evolution_stage}
           isAlive={creature.is_alive}
         />
-        <div style={styles.name}>{creature.name}</div>
-        <div style={{ ...styles.mood, color: moodColor }}>
-          {creature.mood} | {creature.evolution_stage}
+        <div
+          style={{
+            fontSize: "0.55rem",
+            fontFamily: "'Courier New', monospace",
+            color: "#4a5a3a",
+            marginTop: "6px",
+            fontWeight: "bold",
+            letterSpacing: "1px",
+            textTransform: "uppercase",
+            position: "relative",
+            zIndex: 2,
+          }}
+        >
+          {creature.name} — {creature.mood}
         </div>
-      </div>
+      </TamagotchiShell>
 
       {/* Status Message */}
       <p style={styles.statusMessage}>{status_message}</p>
