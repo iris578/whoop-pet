@@ -14,7 +14,7 @@ async function ensureTables() {
       id TEXT PRIMARY KEY,
       whoop_user_id TEXT UNIQUE NOT NULL,
       access_token TEXT NOT NULL,
-      refresh_token TEXT NOT NULL,
+      refresh_token TEXT DEFAULT '',
       token_expires_at BIGINT NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`;
@@ -46,6 +46,9 @@ async function ensureTables() {
       created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(user_id, date)
     )`;
+  // Migration: make refresh_token nullable if it was NOT NULL
+  await sql`ALTER TABLE users ALTER COLUMN refresh_token DROP NOT NULL`.catch(function() {});
+  await sql`ALTER TABLE users ALTER COLUMN refresh_token SET DEFAULT ''`.catch(function() {});
   tablesCreated = true;
 }
 
@@ -83,10 +86,13 @@ module.exports = async function handler(req, res) {
       }
 
       var tokens = await tokenRes.json();
+      var accessToken = tokens.access_token || "";
+      var refreshToken = tokens.refresh_token || "";
+      var expiresIn = tokens.expires_in || 3600;
 
       var profileRes = await fetch(
         "https://api.prod.whoop.com/developer/v1/user/profile/basic",
-        { headers: { Authorization: "Bearer " + tokens.access_token } }
+        { headers: { Authorization: "Bearer " + accessToken } }
       );
       if (!profileRes.ok) {
         return res.status(500).json({ error: "Failed to fetch WHOOP profile" });
@@ -96,15 +102,15 @@ module.exports = async function handler(req, res) {
       var sql = getDb();
       var whoopId = String(profile.user_id);
       var userId = "whoop-" + whoopId;
-      var expiresAt = Date.now() + tokens.expires_in * 1000;
+      var expiresAt = Date.now() + expiresIn * 1000;
 
       // Upsert user
       await sql`
         INSERT INTO users (id, whoop_user_id, access_token, refresh_token, token_expires_at)
-        VALUES (${userId}, ${whoopId}, ${tokens.access_token}, ${tokens.refresh_token}, ${expiresAt})
+        VALUES (${userId}, ${whoopId}, ${accessToken}, ${refreshToken}, ${expiresAt})
         ON CONFLICT (whoop_user_id) DO UPDATE SET
-          access_token = ${tokens.access_token},
-          refresh_token = ${tokens.refresh_token},
+          access_token = ${accessToken},
+          refresh_token = CASE WHEN ${refreshToken} != '' THEN ${refreshToken} ELSE users.refresh_token END,
           token_expires_at = ${expiresAt}`;
 
       res.setHeader(
