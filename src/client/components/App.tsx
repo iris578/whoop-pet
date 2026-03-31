@@ -164,7 +164,7 @@ export function App() {
             <div style={styles.demoBanner}>
               Demo Mode — Using simulated health data
               <br />
-              <a href="/auth/whoop" style={styles.connectBtn}>
+              <a href="/api/auth" style={styles.connectBtn}>
                 Connect WHOOP for Real Data
               </a>
             </div>

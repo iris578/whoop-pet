@@ -2,7 +2,7 @@ module.exports = async function handler(req, res) {
   var url = req.url || "";
 
   try {
-    // OAuth callback: /auth/whoop/callback?code=...
+    // OAuth callback: /api/auth/callback?code=...
     if (url.includes("/callback") || req.query.code) {
       var code = req.query.code;
       if (!code) return res.status(400).json({ error: "Missing authorization code" });
@@ -35,7 +35,6 @@ module.exports = async function handler(req, res) {
       }
       var profile = await profileRes.json();
 
-      // Store user ID in cookie (the API function's in-memory store handles the rest)
       var userId = "whoop-" + profile.user_id;
       res.setHeader(
         "Set-Cookie",
@@ -44,7 +43,7 @@ module.exports = async function handler(req, res) {
       return res.redirect(302, "/");
     }
 
-    // OAuth start: /auth/whoop → redirect to WHOOP
+    // OAuth start: redirect to WHOOP
     if (!process.env.WHOOP_CLIENT_ID) {
       return res.status(400).json({
         error: "WHOOP not configured",
