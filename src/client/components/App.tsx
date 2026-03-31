@@ -5,18 +5,18 @@ import { PrivacyPolicy } from "./PrivacyPolicy.js";
 
 const styles: Record<string, React.CSSProperties> = {
   app: {
-    minHeight: "100vh",
+    height: "100vh",
     background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)",
     color: "#e0e0e0",
     fontFamily: "'Courier New', monospace",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
     padding: "20px",
   },
   header: {
     textAlign: "center" as const,
-    marginTop: "200px",
     marginBottom: "20px",
   },
   title: {
