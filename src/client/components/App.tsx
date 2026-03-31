@@ -16,6 +16,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   header: {
     textAlign: "center" as const,
+    marginTop: "200px",
     marginBottom: "20px",
   },
   title: {

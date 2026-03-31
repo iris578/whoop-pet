@@ -43,39 +43,69 @@ function Hearts({ hp }: { hp: number }) {
 
 function StatBar({
   label,
+  value,
+  max,
   color,
   bgColor,
   icon,
 }: {
   label: string;
+  value: number;
+  max: number;
   color: string;
   bgColor: string;
   icon: string;
 }) {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
     <div
       style={{
-        flex: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "6px",
+        width: "100%",
+        position: "relative",
         background: bgColor,
         borderRadius: "20px",
-        padding: "10px 8px",
+        height: "36px",
+        overflow: "hidden",
       }}
     >
-      <span style={{ fontSize: "14px" }}>{icon}</span>
-      <span
+      {/* Fill */}
+      <div
         style={{
-          fontSize: "0.75rem",
-          fontWeight: "700",
-          color: color,
-          fontFamily: "'Pixelify Sans', 'Courier New', monospace",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          height: "100%",
+          width: `${pct}%`,
+          background: color,
+          borderRadius: "20px",
+          transition: "width 0.5s ease",
+        }}
+      />
+      {/* Label */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          height: "100%",
         }}
       >
-        {label}
-      </span>
+        <span style={{ fontSize: "14px" }}>{icon}</span>
+        <span
+          style={{
+            fontSize: "0.8rem",
+            fontWeight: "700",
+            color: "#fff",
+            fontFamily: "'Pixelify Sans', 'Courier New', monospace",
+            textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+          }}
+        >
+          {label}
+        </span>
+      </div>
     </div>
   );
 }
@@ -195,24 +225,31 @@ export function CreatureView({
         <div
           style={{
             display: "flex",
-            gap: "12px",
+            gap: "8px",
             marginTop: "16px",
+            width: "100%",
           }}
         >
           <StatBar
             label="Recovery"
+            value={metrics ? metrics.recovery : 0}
+            max={100}
             color="#4a9e5c"
             bgColor="#d5f5dc"
             icon="💚"
           />
           <StatBar
             label="Sleep"
+            value={metrics ? metrics.sleep_score : 0}
+            max={100}
             color="#4a7ec4"
             bgColor="#d5e5f5"
             icon="😴"
           />
           <StatBar
             label="Strain"
+            value={metrics ? metrics.strain : 0}
+            max={21}
             color="#d48a30"
             bgColor="#fef0d5"
             icon="🔥"
