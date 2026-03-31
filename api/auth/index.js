@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
       redirect_uri: process.env.WHOOP_REDIRECT_URI || "",
       response_type: "code",
       scope: "read:recovery read:sleep read:workout read:profile read:cycles",
-      state: Math.random().toString(36).substring(7),
+      state: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
     });
 
     return res.redirect(302, "https://api.prod.whoop.com/oauth/oauth2/auth?" + params);
