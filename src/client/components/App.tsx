@@ -19,8 +19,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "20px",
   },
   title: {
-    fontSize: "2.5rem",
-    fontWeight: "bold",
+    fontSize: "3rem",
+    fontFamily: "'Bangers', cursive",
+    fontWeight: "normal",
+    letterSpacing: "3px",
     background: "linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
