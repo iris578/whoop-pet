@@ -84,13 +84,34 @@ module.exports = async function handler(req, res) {
       return res.json({ whoop_configured: !!process.env.WHOOP_CLIENT_ID });
     }
 
-    // --- Resolve user ---
+    // --- Resolve user from session cookie ---
     var userId;
     var isDemo;
-    var cookieUserId = cookies.bodypet_user;
-    if (cookieUserId && users.has(cookieUserId)) {
-      userId = cookieUserId;
-      isDemo = false;
+    var sessionCookie = cookies.bodypet_session;
+    if (sessionCookie) {
+      try {
+        var session = JSON.parse(Buffer.from(sessionCookie, "base64").toString());
+        userId = "whoop-" + session.uid;
+        isDemo = false;
+        // Ensure user exists in memory with tokens from cookie
+        if (!users.has(userId)) {
+          var user = {
+            id: userId,
+            whoop_user_id: session.uid,
+            access_token: session.at,
+            refresh_token: session.rt,
+            token_expires_at: session.exp,
+            timezone: "UTC",
+            created_at: new Date().toISOString(),
+          };
+          users.set(userId, user);
+        }
+      } catch (e) {
+        // Bad cookie, fall through to demo
+        ensureDemoUser();
+        userId = DEMO_USER_ID;
+        isDemo = true;
+      }
     } else {
       ensureDemoUser();
       userId = DEMO_USER_ID;

@@ -35,10 +35,17 @@ module.exports = async function handler(req, res) {
       }
       var profile = await profileRes.json();
 
-      var userId = "whoop-" + profile.user_id;
+      // Encode tokens + profile into cookie so the API function can use them
+      var session = {
+        uid: String(profile.user_id),
+        at: tokens.access_token,
+        rt: tokens.refresh_token,
+        exp: Date.now() + tokens.expires_in * 1000,
+      };
+      var encoded = Buffer.from(JSON.stringify(session)).toString("base64");
       res.setHeader(
         "Set-Cookie",
-        "bodypet_user=" + userId + "; Path=/; HttpOnly; Max-Age=31536000; SameSite=Lax"
+        "bodypet_session=" + encoded + "; Path=/; HttpOnly; Max-Age=31536000; SameSite=Lax"
       );
       return res.redirect(302, "/");
     }
