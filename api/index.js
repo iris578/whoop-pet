@@ -120,6 +120,16 @@ module.exports = async function handler(req, res) {
 
     var today = new Date().toISOString().split("T")[0];
 
+    // Debug: show raw WHOOP API responses
+    if (url.startsWith("/api/debug")) {
+      if (!isDemo) {
+        var user = users.get(userId);
+        var debugData = await fetchWhoopMetrics(user);
+        return res.json({ userId: userId, raw: debugData });
+      }
+      return res.json({ userId: userId, message: "demo mode, no WHOOP data" });
+    }
+
     if (url.startsWith("/api/creature/refresh")) {
       var display = await updateCreature(userId, today);
       return res.json(display);
@@ -291,32 +301,49 @@ async function fetchWhoopMetrics(user) {
     fetch("https://api.prod.whoop.com/developer/v1/cycle?limit=1", { headers: headers }).catch(function () { return null; }),
   ]);
 
-  var recovery = 50, sleepScore = 50, strain = 10, hrv = 0, rhr = 0;
+  var recovery = null, sleepScore = null, strain = null, hrv = null, rhr = null;
+  var rawResponses = {};
   try {
     if (results[0] && results[0].ok) {
       var d = await results[0].json();
+      rawResponses.recovery = d;
       var rec = d.records && d.records[0];
       if (rec && rec.score) {
-        recovery = rec.score.recovery_score || 50;
-        hrv = rec.score.hrv_rmssd_milli || 0;
-        rhr = rec.score.resting_heart_rate || 0;
+        recovery = rec.score.recovery_score;
+        hrv = rec.score.hrv_rmssd_milli;
+        rhr = rec.score.resting_heart_rate;
       }
     }
   } catch (e) {}
   try {
     if (results[1] && results[1].ok) {
       var d2 = await results[1].json();
-      sleepScore = (d2.records && d2.records[0] && d2.records[0].score && d2.records[0].score.sleep_performance_percentage) || 50;
+      rawResponses.sleep = d2;
+      var sleepRec = d2.records && d2.records[0];
+      if (sleepRec && sleepRec.score) {
+        sleepScore = sleepRec.score.sleep_performance_percentage;
+      }
     }
   } catch (e) {}
   try {
     if (results[2] && results[2].ok) {
       var d3 = await results[2].json();
-      strain = (d3.records && d3.records[0] && d3.records[0].score && d3.records[0].score.strain) || 10;
+      rawResponses.cycle = d3;
+      var cycleRec = d3.records && d3.records[0];
+      if (cycleRec && cycleRec.score) {
+        strain = cycleRec.score.strain;
+      }
     }
   } catch (e) {}
 
-  return { recovery: recovery, sleep_score: sleepScore, strain: strain, hrv: hrv, rhr: rhr };
+  return {
+    recovery: recovery != null ? recovery : 50,
+    sleep_score: sleepScore != null ? sleepScore : 50,
+    strain: strain != null ? strain : 10,
+    hrv: hrv != null ? hrv : 0,
+    rhr: rhr != null ? rhr : 0,
+    _raw: rawResponses,
+  };
 }
 
 // --- Creature engine ---
