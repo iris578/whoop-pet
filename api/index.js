@@ -295,46 +295,58 @@ async function fetchWhoopMetrics(user) {
   }
 
   var headers = { Authorization: "Bearer " + accessToken };
-  var results = await Promise.all([
-    fetch("https://api.prod.whoop.com/developer/v1/recovery?limit=1", { headers: headers }).catch(function () { return null; }),
-    fetch("https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1", { headers: headers }).catch(function () { return null; }),
-    fetch("https://api.prod.whoop.com/developer/v1/cycle?limit=1", { headers: headers }).catch(function () { return null; }),
-  ]);
+  var endpoints = {
+    recovery: "https://api.prod.whoop.com/developer/v1/recovery?limit=1",
+    sleep: "https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1",
+    cycle: "https://api.prod.whoop.com/developer/v1/cycle?limit=1",
+  };
+
+  var responses = {};
+  var fetches = await Promise.all(
+    Object.entries(endpoints).map(function (entry) {
+      return fetch(entry[1], { headers: headers })
+        .then(async function (r) {
+          var body = null;
+          var text = "";
+          try { text = await r.text(); body = JSON.parse(text); } catch (e) { body = text; }
+          responses[entry[0]] = { status: r.status, ok: r.ok, body: body };
+        })
+        .catch(function (err) {
+          responses[entry[0]] = { status: 0, ok: false, error: String(err) };
+        });
+    })
+  );
 
   var recovery = null, sleepScore = null, strain = null, hrv = null, rhr = null;
-  var rawResponses = {};
-  try {
-    if (results[0] && results[0].ok) {
-      var d = await results[0].json();
-      rawResponses.recovery = d;
-      var rec = d.records && d.records[0];
-      if (rec && rec.score) {
-        recovery = rec.score.recovery_score;
-        hrv = rec.score.hrv_rmssd_milli;
-        rhr = rec.score.resting_heart_rate;
-      }
+
+  // Parse recovery
+  var recBody = responses.recovery && responses.recovery.ok && responses.recovery.body;
+  if (recBody) {
+    var rec = recBody.records && recBody.records[0];
+    if (rec && rec.score) {
+      recovery = rec.score.recovery_score;
+      hrv = rec.score.hrv_rmssd_milli;
+      rhr = rec.score.resting_heart_rate;
     }
-  } catch (e) {}
-  try {
-    if (results[1] && results[1].ok) {
-      var d2 = await results[1].json();
-      rawResponses.sleep = d2;
-      var sleepRec = d2.records && d2.records[0];
-      if (sleepRec && sleepRec.score) {
-        sleepScore = sleepRec.score.sleep_performance_percentage;
-      }
+  }
+
+  // Parse sleep
+  var sleepBody = responses.sleep && responses.sleep.ok && responses.sleep.body;
+  if (sleepBody) {
+    var sleepRec = sleepBody.records && sleepBody.records[0];
+    if (sleepRec && sleepRec.score) {
+      sleepScore = sleepRec.score.sleep_performance_percentage;
     }
-  } catch (e) {}
-  try {
-    if (results[2] && results[2].ok) {
-      var d3 = await results[2].json();
-      rawResponses.cycle = d3;
-      var cycleRec = d3.records && d3.records[0];
-      if (cycleRec && cycleRec.score) {
-        strain = cycleRec.score.strain;
-      }
+  }
+
+  // Parse cycle (strain)
+  var cycleBody = responses.cycle && responses.cycle.ok && responses.cycle.body;
+  if (cycleBody) {
+    var cycleRec = cycleBody.records && cycleBody.records[0];
+    if (cycleRec && cycleRec.score) {
+      strain = cycleRec.score.strain;
     }
-  } catch (e) {}
+  }
 
   return {
     recovery: recovery != null ? recovery : 50,
@@ -342,7 +354,7 @@ async function fetchWhoopMetrics(user) {
     strain: strain != null ? strain : 10,
     hrv: hrv != null ? hrv : 0,
     rhr: rhr != null ? rhr : 0,
-    _raw: rawResponses,
+    _raw: responses,
   };
 }
 
