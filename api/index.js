@@ -390,10 +390,14 @@ function calculateMood(metrics) {
 }
 
 function calculateHP(metrics, previousHP) {
-  var recoveryFactor = (metrics.recovery - 50) / 50;
-  var sleepFactor = (metrics.sleep_score - 50) / 50;
-  var strainPenalty = metrics.strain > 18 ? -10 : metrics.strain > 15 ? -5 : 0;
-  var delta = recoveryFactor * 15 + sleepFactor * 15 + strainPenalty;
+  // Strain always adds HP (working out is always good)
+  var strainBonus = metrics.strain * 1.0;
+  // Sleep: adds if above 60%, subtracts if below
+  var sleepDelta = (metrics.sleep_score - 60) * 0.3;
+  // Recovery: adds if above 50%, subtracts if below
+  var recoveryDelta = (metrics.recovery - 50) * 0.3;
+
+  var delta = strainBonus + sleepDelta + recoveryDelta;
   return Math.max(0, Math.min(100, previousHP + delta));
 }
 
