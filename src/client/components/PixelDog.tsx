@@ -261,8 +261,29 @@ export function PixelDog({ mood, evolutionStage, isAlive }: PixelDogProps) {
   const grid = DOGS[stage]?.[m] || DOGS.egg.neutral;
   const px = stage === "egg" ? 7 : 5;
 
+  const isDead = m === "dead";
+
   return (
-    <div style={{ display: "inline-block", imageRendering: "pixelated" as any }}>
+    <>
+      <style>{`
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-3deg); }
+          75% { transform: rotate(3deg); }
+        }
+        @keyframes eggWobble {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          20% { transform: rotate(-5deg) scale(1.02); }
+          40% { transform: rotate(4deg) scale(0.98); }
+          60% { transform: rotate(-3deg) scale(1.01); }
+          80% { transform: rotate(2deg) scale(0.99); }
+        }
+      `}</style>
+      <div style={{
+        display: "inline-block",
+        imageRendering: "pixelated" as any,
+        animation: isDead ? "none" : stage === "egg" ? "eggWobble 2s ease-in-out infinite" : "wiggle 1s ease-in-out infinite",
+      }}>
       {grid.map((row, y) => (
         <div key={y} style={{ display: "flex", height: px }}>
           {row.split("").map((ch, x) => (
@@ -277,6 +298,7 @@ export function PixelDog({ mood, evolutionStage, isAlive }: PixelDogProps) {
           ))}
         </div>
       ))}
-    </div>
+      </div>
+    </>
   );
 }
