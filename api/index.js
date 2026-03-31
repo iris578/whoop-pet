@@ -1,195 +1,102 @@
+var { neon } = require("@neondatabase/serverless");
+
+function getDb() {
+  return neon(process.env.DATABASE_URL);
+}
+
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const url = req.url || "";
-  const cookies = parseCookies(req.headers.cookie);
+  var url = req.url || "";
+  var cookies = parseCookies(req.headers.cookie);
 
   try {
-    // --- Health check ---
+    // Health check
     if (url === "/api" || url === "/api/" || url.startsWith("/api/health")) {
-      return res.status(200).json({
-        status: "ok",
-        url: req.url,
-        method: req.method,
-        timestamp: new Date().toISOString(),
-      });
+      return res.json({ status: "ok", timestamp: new Date().toISOString() });
     }
 
-    // --- AUTH routes ---
-    if (url.startsWith("/auth/whoop/callback")) {
-      const code = req.query.code;
-      if (!code) return res.status(400).json({ error: "Missing code" });
+    // Resolve user
+    var sql = getDb();
+    var userId = cookies.bodypet_user;
+    var isDemo = true;
+    var user = null;
 
-      const tokenRes = await fetch("https://api.prod.whoop.com/oauth/oauth2/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "authorization_code",
-          code,
-          client_id: process.env.WHOOP_CLIENT_ID || "",
-          client_secret: process.env.WHOOP_CLIENT_SECRET || "",
-          redirect_uri: process.env.WHOOP_REDIRECT_URI || "",
-        }),
-      });
-
-      if (!tokenRes.ok) {
-        const text = await tokenRes.text();
-        return res.status(500).json({ error: "Token exchange failed", detail: text });
-      }
-
-      const tokens = await tokenRes.json();
-
-      const profileRes = await fetch(
-        "https://api.prod.whoop.com/developer/v1/user/profile/basic",
-        { headers: { Authorization: "Bearer " + tokens.access_token } }
-      );
-      if (!profileRes.ok) {
-        return res.status(500).json({ error: "Failed to fetch profile" });
-      }
-      const profile = await profileRes.json();
-
-      const user = createUser(
-        String(profile.user_id),
-        tokens.access_token,
-        tokens.refresh_token,
-        Date.now() + tokens.expires_in * 1000
-      );
-
-      res.setHeader(
-        "Set-Cookie",
-        "bodypet_user=" + user.id + "; Path=/; HttpOnly; Max-Age=31536000; SameSite=Lax"
-      );
-      return res.redirect(302, "/");
-    }
-
-    if (url.startsWith("/auth/whoop")) {
-      if (!process.env.WHOOP_CLIENT_ID) {
-        return res.status(400).json({ error: "WHOOP not configured" });
-      }
-      const params = new URLSearchParams({
-        client_id: process.env.WHOOP_CLIENT_ID,
-        redirect_uri: process.env.WHOOP_REDIRECT_URI || "",
-        response_type: "code",
-        scope: "read:recovery read:sleep read:workout read:profile read:cycles",
-        state: Math.random().toString(36).substring(7),
-      });
-      return res.redirect(302, "https://api.prod.whoop.com/oauth/oauth2/auth?" + params);
-    }
-
-    if (url.startsWith("/auth/status")) {
-      return res.json({ whoop_configured: !!process.env.WHOOP_CLIENT_ID });
-    }
-
-    // --- Resolve user from session cookie ---
-    var userId;
-    var isDemo;
-    var sessionCookie = cookies.bodypet_session;
-    if (sessionCookie) {
-      try {
-        var session = JSON.parse(Buffer.from(sessionCookie, "base64").toString());
-        userId = "whoop-" + session.uid;
+    if (userId) {
+      var rows = await sql`SELECT * FROM users WHERE id = ${userId}`;
+      if (rows.length > 0) {
+        user = rows[0];
         isDemo = false;
-        // Ensure user exists in memory with tokens from cookie
-        if (!users.has(userId)) {
-          var user = {
-            id: userId,
-            whoop_user_id: session.uid,
-            access_token: session.at,
-            refresh_token: session.rt,
-            token_expires_at: session.exp,
-            timezone: "UTC",
-            created_at: new Date().toISOString(),
-          };
-          users.set(userId, user);
-        }
-      } catch (e) {
-        // Bad cookie, fall through to demo
-        ensureDemoUser();
-        userId = DEMO_USER_ID;
-        isDemo = true;
       }
-    } else {
-      ensureDemoUser();
-      userId = DEMO_USER_ID;
-      isDemo = true;
     }
 
     var today = new Date().toISOString().split("T")[0];
 
-    // Debug: show raw WHOOP API responses
+    // Debug
     if (url.startsWith("/api/debug")) {
-      if (!isDemo) {
-        var user = users.get(userId);
-        var debugData = await fetchWhoopMetrics(user);
+      if (!isDemo && user) {
+        var debugData = await fetchWhoopMetrics(user, sql);
         return res.json({ userId: userId, raw: debugData });
       }
-      return res.json({ userId: userId, message: "demo mode, no WHOOP data" });
+      return res.json({ userId: userId || "none", message: "demo mode" });
     }
 
-    if (url.startsWith("/api/creature/refresh")) {
-      var display = await updateCreature(userId, today);
+    // Creature refresh / get
+    if (url.startsWith("/api/creature/refresh") || url.startsWith("/api/creature")) {
+      var display = await updateCreature(sql, userId, user, isDemo, today);
       return res.json(display);
     }
 
+    // Rename
     if (url.startsWith("/api/creature/name") && req.method === "POST") {
       var body = req.body || {};
       if (!body.name || typeof body.name !== "string" || body.name.length > 20) {
         return res.status(400).json({ error: "Name must be 1-20 characters" });
       }
-      var creature = latestCreatureStore.get(userId);
-      if (creature) creature.name = body.name;
+      if (!isDemo) {
+        await sql`UPDATE creature_states SET name = ${body.name} WHERE user_id = ${userId}`;
+      }
       return res.json({ name: body.name });
     }
 
-    if (url.startsWith("/api/creature")) {
-      var display2 = await updateCreature(userId, today);
-      return res.json(display2);
-    }
-
+    // Me
     if (url.startsWith("/api/me")) {
-      var c = latestCreatureStore.get(userId);
+      var creature = null;
+      if (!isDemo) {
+        var crows = await sql`SELECT * FROM creature_states WHERE user_id = ${userId} ORDER BY date DESC LIMIT 1`;
+        creature = crows[0] || null;
+      }
       return res.json({
         user_id: userId,
         is_demo: isDemo,
-        has_creature: !!c,
-        creature_name: c ? c.name : null,
+        has_creature: !!creature,
+        creature_name: creature ? creature.name : null,
         whoop_connected: !isDemo,
       });
     }
 
+    // History
     if (url.startsWith("/api/history")) {
-      var all = [];
-      for (var m of metricsStore.values()) {
-        if (m.user_id === userId) all.push(m);
+      if (!isDemo) {
+        var mrows = await sql`SELECT * FROM daily_metrics WHERE user_id = ${userId} ORDER BY date DESC LIMIT 7`;
+        return res.json({ metrics: mrows });
       }
-      all.sort(function (a, b) { return b.date.localeCompare(a.date); });
-      return res.json({ metrics: all.slice(0, 7) });
+      return res.json({ metrics: [] });
     }
 
     return res.status(404).json({ error: "Not found", url: url });
   } catch (err) {
     console.error("Handler error:", err);
-    return res.status(500).json({
-      error: "Internal server error",
-      message: err instanceof Error ? err.message : String(err),
-    });
+    return res.status(500).json({ error: "Internal server error", message: String(err) });
   }
 };
 
 // ============================================================
-// Helpers & State (all inline, zero imports)
+// Helpers
 // ============================================================
-
-var users = new Map();
-var usersByWhoop = new Map();
-var metricsStore = new Map();
-var creaturesStore = new Map();
-var latestCreatureStore = new Map();
-var DEMO_USER_ID = "demo-user-000";
 
 function genId() {
   var d = Date.now();
@@ -209,44 +116,6 @@ function parseCookies(header) {
     if (name) cookies[name] = parts.join("=");
   });
   return cookies;
-}
-
-function ensureDemoUser() {
-  if (!users.has(DEMO_USER_ID)) {
-    var user = {
-      id: DEMO_USER_ID,
-      whoop_user_id: "demo",
-      access_token: "demo",
-      refresh_token: "demo",
-      token_expires_at: Date.now() + 999999999,
-      timezone: "UTC",
-      created_at: new Date().toISOString(),
-    };
-    users.set(DEMO_USER_ID, user);
-  }
-  return users.get(DEMO_USER_ID);
-}
-
-function createUser(whoopUserId, accessToken, refreshToken, expiresAt) {
-  var existing = usersByWhoop.get(whoopUserId);
-  if (existing) {
-    existing.access_token = accessToken;
-    existing.refresh_token = refreshToken;
-    existing.token_expires_at = expiresAt;
-    return existing;
-  }
-  var user = {
-    id: genId(),
-    whoop_user_id: whoopUserId,
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    token_expires_at: expiresAt,
-    timezone: "UTC",
-    created_at: new Date().toISOString(),
-  };
-  users.set(user.id, user);
-  usersByWhoop.set(whoopUserId, user);
-  return user;
 }
 
 // --- Demo metrics ---
@@ -270,9 +139,11 @@ function generateDemoMetrics() {
 }
 
 // --- WHOOP API ---
-async function fetchWhoopMetrics(user) {
+async function fetchWhoopMetrics(user, sql) {
   var accessToken = user.access_token;
-  if (Date.now() >= user.token_expires_at - 60000) {
+
+  // Refresh token if expired
+  if (Date.now() >= Number(user.token_expires_at) - 60000) {
     try {
       var refreshRes = await fetch("https://api.prod.whoop.com/oauth/oauth2/token", {
         method: "POST",
@@ -286,10 +157,9 @@ async function fetchWhoopMetrics(user) {
       });
       if (refreshRes.ok) {
         var tokens = await refreshRes.json();
-        user.access_token = tokens.access_token;
-        user.refresh_token = tokens.refresh_token;
-        user.token_expires_at = Date.now() + tokens.expires_in * 1000;
         accessToken = tokens.access_token;
+        var newExp = Date.now() + tokens.expires_in * 1000;
+        await sql`UPDATE users SET access_token = ${tokens.access_token}, refresh_token = ${tokens.refresh_token}, token_expires_at = ${newExp} WHERE id = ${user.id}`;
       }
     } catch (e) { /* use existing token */ }
   }
@@ -305,13 +175,12 @@ async function fetchWhoopMetrics(user) {
   };
 
   var responses = {};
-  var fetches = await Promise.all(
+  await Promise.all(
     Object.entries(endpoints).map(function (entry) {
       return fetch(entry[1], { headers: headers })
         .then(async function (r) {
           var body = null;
-          var text = "";
-          try { text = await r.text(); body = JSON.parse(text); } catch (e) { body = text; }
+          try { var text = await r.text(); body = JSON.parse(text); } catch (e) { body = text; }
           responses[entry[0]] = { status: r.status, ok: r.ok, body: body };
         })
         .catch(function (err) {
@@ -322,7 +191,6 @@ async function fetchWhoopMetrics(user) {
 
   var recovery = null, sleepScore = null, strain = null, hrv = null, rhr = null;
 
-  // Helper to find first record from a response
   function firstRecord(resp) {
     if (!resp || !resp.ok || !resp.body) return null;
     var b = resp.body;
@@ -332,7 +200,6 @@ async function fetchWhoopMetrics(user) {
     return null;
   }
 
-  // Parse recovery — try v2 then v1
   var recKeys = ["recovery_v2", "recovery_v1"];
   for (var ri = 0; ri < recKeys.length; ri++) {
     var rec = firstRecord(responses[recKeys[ri]]);
@@ -344,7 +211,6 @@ async function fetchWhoopMetrics(user) {
     }
   }
 
-  // Parse sleep — try v2 then v1
   var sleepKeys = ["sleep_v2", "sleep_v1"];
   for (var si = 0; si < sleepKeys.length; si++) {
     var sleepRec = firstRecord(responses[sleepKeys[si]]);
@@ -354,14 +220,10 @@ async function fetchWhoopMetrics(user) {
     }
   }
 
-  // Parse cycle (strain) — also try to get recovery from cycle if not found above
   var cycleBody = responses.cycle && responses.cycle.ok && responses.cycle.body;
   if (cycleBody) {
     var cycleRec = cycleBody.records && cycleBody.records[0];
-    if (cycleRec && cycleRec.score) {
-      strain = cycleRec.score.strain;
-    }
-    // In v2, recovery may be nested inside the cycle record
+    if (cycleRec && cycleRec.score) strain = cycleRec.score.strain;
     if (recovery == null && cycleRec && cycleRec.recovery && cycleRec.recovery.score) {
       recovery = cycleRec.recovery.score.recovery_score;
       hrv = cycleRec.recovery.score.hrv_rmssd_milli;
@@ -390,13 +252,9 @@ function calculateMood(metrics) {
 }
 
 function calculateHP(metrics, previousHP) {
-  // Strain adds HP only above 5 (baseline ~5 is passive daily activity)
   var strainBonus = metrics.strain > 5 ? (metrics.strain - 5) * 1.0 : 0;
-  // Sleep: adds if above 60%, subtracts if below
   var sleepDelta = (metrics.sleep_score - 60) * 0.6;
-  // Recovery: adds if above 50%, subtracts if below
   var recoveryDelta = (metrics.recovery - 50) * 0.6;
-
   var delta = strainBonus + sleepDelta + recoveryDelta;
   return Math.max(0, Math.min(100, previousHP + delta));
 }
@@ -419,52 +277,6 @@ function calculateTraits(metrics, streak) {
   if (metrics.recovery <= 20) traits.push("exhausted");
   if (metrics.sleep_score <= 20) traits.push("sleep-deprived");
   return traits;
-}
-
-function getAsciiArt(creature) {
-  if (!creature.is_alive) {
-    return "    ╔═══════════════╗\n    ║   ✖  ✖       ║\n    ║    ───        ║\n    ║  R.I.P.       ║\n    ║  " + creature.name.padEnd(11) + "  ║\n    ╚═══════════════╝";
-  }
-  var faces = {
-    egg: {
-      thriving: "    🥚✨\n   (^‿^)\n  Ready to\n   hatch!",
-      happy: "    🥚\n   (^‿^)\n  Warming\n    up!",
-      neutral: "    🥚\n   (•_•)\n  Sitting\n   here...",
-      tired: "    🥚\n   (-_-)\n   Cold...",
-      struggling: "    🥚💔\n   (;_;)\n  Cracking\n   apart...",
-    },
-    baby: {
-      thriving: "   ∩∩\n  (★‿★)  ✨\n  /|  |\\\n   d  b\n  So strong!",
-      happy: "   ∩∩\n  (^‿^)\n  /|  |\\\n   d  b\n  Growing!",
-      neutral: "   ∩∩\n  (•_•)\n  /|  |\\\n   d  b\n  Hanging in",
-      tired: "   ∩∩\n  (-_-) zzZ\n  /|  |\\\n   d  b\n  Sleepy...",
-      struggling: "   ∩∩\n  (T_T)\n  /|  |\\\n   d  b\n  Help me...",
-    },
-    teen: {
-      thriving: "   ∩∩∩\n  (★‿★)  ⚡\n  /|██|\\\n  / ‖‖ \\\n  On fire!",
-      happy: "   ∩∩∩\n  (^‿^)\n  /|██|\\\n  / ‖‖ \\\n  Feeling good",
-      neutral: "   ∩∩∩\n  (•_•)\n  /|██|\\\n  / ‖‖ \\\n  Meh...",
-      tired: "   ∩∩∩\n  (-_-)zzZ\n  /|██|\\\n  / ‖‖ \\\n  Need rest",
-      struggling: "   ∩∩∩\n  (×_×)\n  /|██|\\\n  / ‖‖ \\\n  Barely alive",
-    },
-    adult: {
-      thriving: "  ╔∩∩∩╗\n  ║★‿★║ 🔥\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  UNSTOPPABLE",
-      happy: "  ╔∩∩∩╗\n  ║^‿^║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Strong!",
-      neutral: "  ╔∩∩∩╗\n  ║•_•║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Steady",
-      tired: "  ╔∩∩∩╗\n  ║-_-║ zzZ\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Drained",
-      struggling: "  ╔∩∩∩╗\n  ║×_×║ 💔\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Fading...",
-    },
-    legendary: {
-      thriving: "  👑\n  ╔∩∩∩╗ ✨⚡🔥\n  ║★‿★║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  ★ LEGENDARY ★",
-      happy: "  👑\n  ╔∩∩∩╗ ✨\n  ║^‿^║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  ★ LEGENDARY ★",
-      neutral: "  👑\n  ╔∩∩∩╗\n  ║•_•║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Legendary",
-      tired: "  👑\n  ╔∩∩∩╗ zzZ\n  ║-_-║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Even legends rest",
-      struggling: "  👑\n  ╔∩∩∩╗ 💔\n  ║×_×║\n  ╠████╣\n  ║ ‖‖ ║\n  ╚╧══╧╝\n  Legend down...",
-    },
-  };
-  var stage = faces[creature.evolution_stage];
-  if (stage && stage[creature.mood]) return stage[creature.mood];
-  return "(•_•)";
 }
 
 function getStatusMessage(creature) {
@@ -494,36 +306,40 @@ function getShareText(creature, metrics) {
   return lines.join("\n");
 }
 
-// --- Core: update creature ---
-async function updateCreature(userId, date) {
-  var isDemo = userId === DEMO_USER_ID;
-  var cacheKey = userId + ":" + date;
+// --- Core: update creature (with DB persistence) ---
+async function updateCreature(sql, userId, user, isDemo, date) {
+  // Check cached metrics in DB
+  var cachedRows = [];
+  if (!isDemo) {
+    cachedRows = await sql`SELECT * FROM daily_metrics WHERE user_id = ${userId} AND date = ${date}`;
+  }
+  var cachedMetrics = cachedRows[0] || null;
 
-  var cachedMetrics = metricsStore.get(cacheKey);
+  // Check if cache is fresh (< 1 hour)
   if (cachedMetrics) {
     var fetchedAt = new Date(cachedMetrics.fetched_at).getTime();
     if (Date.now() - fetchedAt < 3600000) {
-      var cachedCreature = latestCreatureStore.get(userId);
-      if (cachedCreature && cachedCreature.date === date) {
+      var creatureRows = await sql`SELECT * FROM creature_states WHERE user_id = ${userId} AND date = ${date}`;
+      if (creatureRows[0]) {
+        var c = creatureRows[0];
+        c.traits = typeof c.traits === "string" ? JSON.parse(c.traits) : (c.traits || []);
         return {
-          creature: cachedCreature,
+          creature: c,
           metrics: cachedMetrics,
-          ascii_art: getAsciiArt(cachedCreature),
-          status_message: getStatusMessage(cachedCreature),
-          share_text: getShareText(cachedCreature, cachedMetrics),
-          is_demo: isDemo,
+          status_message: getStatusMessage(c),
+          share_text: getShareText(c, cachedMetrics),
+          is_demo: false,
         };
       }
     }
   }
 
+  // Fetch fresh data
   var whoopData;
   if (isDemo) {
     whoopData = generateDemoMetrics();
   } else {
-    var user = users.get(userId);
-    if (!user) throw new Error("User not found");
-    whoopData = await fetchWhoopMetrics(user);
+    whoopData = await fetchWhoopMetrics(user, sql);
   }
 
   var metrics = {
@@ -535,19 +351,39 @@ async function updateCreature(userId, date) {
     strain: whoopData.strain,
     hrv: whoopData.hrv,
     rhr: whoopData.rhr,
-    fetched_at: new Date().toISOString(),
   };
-  metricsStore.set(cacheKey, metrics);
 
-  var previous = latestCreatureStore.get(userId);
+  // Save metrics to DB
+  if (!isDemo) {
+    await sql`
+      INSERT INTO daily_metrics (id, user_id, date, recovery, sleep_score, strain, hrv, rhr)
+      VALUES (${metrics.id}, ${userId}, ${date}, ${metrics.recovery}, ${metrics.sleep_score}, ${metrics.strain}, ${metrics.hrv}, ${metrics.rhr})
+      ON CONFLICT (user_id, date) DO UPDATE SET
+        recovery = ${metrics.recovery}, sleep_score = ${metrics.sleep_score}, strain = ${metrics.strain},
+        hrv = ${metrics.hrv}, rhr = ${metrics.rhr}, fetched_at = NOW()`;
+  }
+
+  // Get previous creature state
+  var prevRows = [];
+  if (!isDemo) {
+    prevRows = await sql`SELECT * FROM creature_states WHERE user_id = ${userId} ORDER BY date DESC LIMIT 1`;
+  }
+  var previous = prevRows[0] || null;
+
+  // Calculate streak
   var streak = 1;
-  var hp = calculateHP(metrics, previous ? previous.health_points : 50);
+  if (!isDemo) {
+    var streakRows = await sql`SELECT date FROM creature_states WHERE user_id = ${userId} AND is_alive = true ORDER BY date DESC LIMIT 365`;
+    streak = calcStreak(streakRows, date);
+  }
+
+  var hp = calculateHP(metrics, previous ? Number(previous.health_points) : 50);
   var isAlive = hp > 0;
   var mood = isAlive ? calculateMood(metrics) : "dead";
   var traits = calculateTraits(metrics, streak);
 
   var creature = {
-    id: (previous && previous.id) || genId(),
+    id: (previous && previous.date === date && previous.id) || genId(),
     user_id: userId,
     date: date,
     name: (previous && previous.name) || "Whoopy",
@@ -557,17 +393,47 @@ async function updateCreature(userId, date) {
     streak_days: streak,
     is_alive: isAlive,
     traits: traits,
-    created_at: (previous && previous.created_at) || new Date().toISOString(),
   };
-  creaturesStore.set(cacheKey, creature);
-  latestCreatureStore.set(userId, creature);
+
+  // Save creature to DB
+  if (!isDemo) {
+    await sql`
+      INSERT INTO creature_states (id, user_id, date, name, mood, evolution_stage, health_points, streak_days, is_alive, traits)
+      VALUES (${creature.id}, ${userId}, ${date}, ${creature.name}, ${creature.mood}, ${creature.evolution_stage}, ${creature.health_points}, ${creature.streak_days}, ${creature.is_alive}, ${JSON.stringify(creature.traits)})
+      ON CONFLICT (user_id, date) DO UPDATE SET
+        mood = ${creature.mood}, evolution_stage = ${creature.evolution_stage},
+        health_points = ${creature.health_points}, streak_days = ${creature.streak_days},
+        is_alive = ${creature.is_alive}, traits = ${JSON.stringify(creature.traits)}`;
+  }
+
+  metrics.fetched_at = new Date().toISOString();
 
   return {
     creature: creature,
     metrics: metrics,
-    ascii_art: getAsciiArt(creature),
     status_message: getStatusMessage(creature),
     share_text: getShareText(creature, metrics),
     is_demo: isDemo,
   };
+}
+
+function calcStreak(rows, todayDate) {
+  if (!rows || rows.length === 0) return 1;
+  // Include today
+  var dates = rows.map(function (r) { return r.date; });
+  if (dates.indexOf(todayDate) === -1) dates.unshift(todayDate);
+  dates.sort(function (a, b) { return b.localeCompare(a); });
+
+  var streak = 1;
+  for (var i = 1; i < dates.length; i++) {
+    var curr = new Date(dates[i - 1]);
+    var prev = new Date(dates[i]);
+    var diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (Math.round(diff) === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
 }

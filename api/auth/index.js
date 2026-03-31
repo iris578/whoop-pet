@@ -1,8 +1,66 @@
+var { neon } = require("@neondatabase/serverless");
+
+function getDb() {
+  return neon(process.env.DATABASE_URL);
+}
+
+// Run once on first cold start — creates tables if they don't exist
+var tablesCreated = false;
+async function ensureTables() {
+  if (tablesCreated) return;
+  var sql = getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      whoop_user_id TEXT UNIQUE NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      token_expires_at BIGINT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS daily_metrics (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      date TEXT NOT NULL,
+      recovery REAL NOT NULL,
+      sleep_score REAL NOT NULL,
+      strain REAL NOT NULL,
+      hrv REAL DEFAULT 0,
+      rhr REAL DEFAULT 0,
+      fetched_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, date)
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS creature_states (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      date TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT 'Whoopy',
+      mood TEXT NOT NULL DEFAULT 'neutral',
+      evolution_stage TEXT NOT NULL DEFAULT 'egg',
+      health_points REAL NOT NULL DEFAULT 50,
+      streak_days INTEGER NOT NULL DEFAULT 0,
+      is_alive BOOLEAN NOT NULL DEFAULT true,
+      traits JSONB NOT NULL DEFAULT '[]',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, date)
+    )`;
+  tablesCreated = true;
+}
+
 module.exports = async function handler(req, res) {
+  try {
+    await ensureTables();
+  } catch (err) {
+    console.error("DB init error:", err);
+    return res.status(500).json({ error: "Database initialization failed", message: String(err) });
+  }
+
   var url = req.url || "";
 
   try {
-    // OAuth callback: /api/auth/callback?code=...
+    // OAuth callback
     if (url.includes("/callback") || req.query.code) {
       var code = req.query.code;
       if (!code) return res.status(400).json({ error: "Missing authorization code" });
@@ -35,27 +93,30 @@ module.exports = async function handler(req, res) {
       }
       var profile = await profileRes.json();
 
-      // Encode tokens + profile into cookie so the API function can use them
-      var session = {
-        uid: String(profile.user_id),
-        at: tokens.access_token,
-        rt: tokens.refresh_token,
-        exp: Date.now() + tokens.expires_in * 1000,
-      };
-      var encoded = Buffer.from(JSON.stringify(session)).toString("base64");
+      var sql = getDb();
+      var whoopId = String(profile.user_id);
+      var userId = "whoop-" + whoopId;
+      var expiresAt = Date.now() + tokens.expires_in * 1000;
+
+      // Upsert user
+      await sql`
+        INSERT INTO users (id, whoop_user_id, access_token, refresh_token, token_expires_at)
+        VALUES (${userId}, ${whoopId}, ${tokens.access_token}, ${tokens.refresh_token}, ${expiresAt})
+        ON CONFLICT (whoop_user_id) DO UPDATE SET
+          access_token = ${tokens.access_token},
+          refresh_token = ${tokens.refresh_token},
+          token_expires_at = ${expiresAt}`;
+
       res.setHeader(
         "Set-Cookie",
-        "bodypet_session=" + encoded + "; Path=/; HttpOnly; Max-Age=31536000; SameSite=Lax"
+        "bodypet_user=" + userId + "; Path=/; HttpOnly; Max-Age=31536000; SameSite=Lax"
       );
       return res.redirect(302, "/");
     }
 
-    // OAuth start: redirect to WHOOP
+    // OAuth start
     if (!process.env.WHOOP_CLIENT_ID) {
-      return res.status(400).json({
-        error: "WHOOP not configured",
-        message: "Set WHOOP_CLIENT_ID and WHOOP_CLIENT_SECRET in Vercel environment variables.",
-      });
+      return res.status(400).json({ error: "WHOOP not configured" });
     }
 
     var params = new URLSearchParams({
@@ -69,9 +130,6 @@ module.exports = async function handler(req, res) {
     return res.redirect(302, "https://api.prod.whoop.com/oauth/oauth2/auth?" + params);
   } catch (err) {
     console.error("Auth error:", err);
-    return res.status(500).json({
-      error: "Authentication failed",
-      message: err instanceof Error ? err.message : String(err),
-    });
+    return res.status(500).json({ error: "Authentication failed", message: String(err) });
   }
 };
