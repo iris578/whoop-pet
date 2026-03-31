@@ -3,19 +3,19 @@ import React from "react";
 // Pixel art dog rendered as a grid of colored cells
 // Each string is a row, each char maps to a color
 
-// LCD-style palette — dark greens on the yellow-green screen
+// Warm pixel palette for cream card background
 const PALETTE: Record<string, string> = {
   ".": "transparent",
-  "#": "#4a5a3a", // dark green (body)
-  "@": "#5a6a48", // medium green (body alt)
-  "o": "#b8c8a0", // light LCD (eyes)
-  "x": "#2a3320", // darkest (pupils, nose)
-  "p": "#3a4a30", // slightly lighter (tongue)
-  "r": "#2a3320", // dark (danger symbols)
-  "g": "#3a4a2a", // dark green (sparkle)
-  "y": "#3a4a2a", // dark green (crown)
-  "z": "#7a8a6a", // faded (dead)
-  "b": "#5a6a48", // medium (zzz)
+  "#": "#c88a32", // golden brown (body)
+  "@": "#e8a840", // light golden (body alt / egg)
+  "o": "#FFFFFF", // white (eyes)
+  "x": "#2a2018", // dark brown (pupils, nose)
+  "p": "#e8607a", // pink (tongue)
+  "r": "#d44040", // red (hearts, danger)
+  "g": "#50b860", // green (sparkle)
+  "y": "#f0c030", // yellow (crown, stars)
+  "z": "#b0a898", // gray-beige (dead)
+  "b": "#6090d0", // blue (zzz)
 };
 
 type Mood = "thriving" | "happy" | "neutral" | "tired" | "struggling" | "dead";

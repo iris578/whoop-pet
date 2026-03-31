@@ -1,116 +1,6 @@
 import React, { useState } from "react";
 import type { CreatureDisplay } from "../../shared/types.js";
 import { PixelDog } from "./PixelDog.js";
-import { TamagotchiShell } from "./TamagotchiShell.js";
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "20px",
-    maxWidth: "480px",
-    width: "100%",
-  },
-  creatureBox: {
-    background: "rgba(255,255,255,0.05)",
-    border: "2px solid rgba(255,255,255,0.1)",
-    borderRadius: "16px",
-    padding: "30px",
-    textAlign: "center" as const,
-    width: "100%",
-    animation: "float 4s ease-in-out infinite",
-  },
-  asciiArt: {
-    whiteSpace: "pre" as const,
-    fontSize: "1.1rem",
-    lineHeight: "1.4",
-    marginBottom: "16px",
-  },
-  name: {
-    fontSize: "1.4rem",
-    fontWeight: "bold",
-    color: "#ffd93d",
-  },
-  mood: {
-    fontSize: "0.9rem",
-    textTransform: "uppercase" as const,
-    letterSpacing: "2px",
-    marginTop: "4px",
-  },
-  statusMessage: {
-    fontStyle: "italic",
-    color: "#aaa",
-    fontSize: "0.95rem",
-  },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-    width: "100%",
-  },
-  statCard: {
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "12px",
-    padding: "16px",
-    textAlign: "center" as const,
-  },
-  statLabel: {
-    fontSize: "0.75rem",
-    color: "#888",
-    textTransform: "uppercase" as const,
-    letterSpacing: "1px",
-  },
-  statValue: {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    marginTop: "4px",
-  },
-  hpBar: {
-    width: "100%",
-    height: "20px",
-    background: "rgba(255,255,255,0.1)",
-    borderRadius: "10px",
-    overflow: "hidden",
-  },
-  hpFill: {
-    height: "100%",
-    borderRadius: "10px",
-    transition: "width 0.5s ease",
-  },
-  traits: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap" as const,
-    justifyContent: "center",
-  },
-  trait: {
-    background: "rgba(255,255,255,0.1)",
-    borderRadius: "20px",
-    padding: "4px 12px",
-    fontSize: "0.8rem",
-  },
-  actions: {
-    display: "flex",
-    gap: "12px",
-    width: "100%",
-  },
-  btn: {
-    flex: 1,
-    padding: "12px",
-    fontSize: "0.9rem",
-    fontFamily: "'Courier New', monospace",
-    border: "none",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-  shareSuccess: {
-    color: "#6bcb77",
-    fontSize: "0.85rem",
-    textAlign: "center" as const,
-  },
-};
 
 function getMoodColor(mood: string): string {
   const colors: Record<string, string> = {
@@ -124,11 +14,90 @@ function getMoodColor(mood: string): string {
   return colors[mood] ?? "#888";
 }
 
-function getHpColor(hp: number): string {
-  if (hp >= 70) return "#6bcb77";
-  if (hp >= 40) return "#ffd93d";
-  if (hp >= 20) return "#ff9f43";
-  return "#ff6b6b";
+function Hearts({ hp }: { hp: number }) {
+  const total = 5;
+  const filled = Math.round((hp / 100) * total);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      {Array.from({ length: total }, (_, i) => {
+        const heartIndex = total - 1 - i;
+        const isFilled = heartIndex < filled;
+        return (
+          <div
+            key={i}
+            style={{
+              fontSize: "18px",
+              lineHeight: 1,
+              color: isFilled ? "#e74c6f" : "#d4c9a8",
+              filter: isFilled ? "none" : "grayscale(1)",
+              opacity: isFilled ? 1 : 0.4,
+            }}
+          >
+            {isFilled ? "♥" : "♡"}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatBar({
+  label,
+  value,
+  max,
+  color,
+  icon,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+  icon: string;
+}) {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+  return (
+    <div style={{ flex: 1 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          marginBottom: "4px",
+        }}
+      >
+        <span style={{ fontSize: "14px" }}>{icon}</span>
+        <span
+          style={{
+            fontSize: "0.65rem",
+            fontWeight: "bold",
+            color: "#8a7e6b",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <div
+        style={{
+          height: "10px",
+          background: "#e8e0d0",
+          borderRadius: "5px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: color,
+            borderRadius: "5px",
+            transition: "width 0.5s ease",
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function CreatureView({
@@ -139,7 +108,7 @@ export function CreatureView({
   onRefresh: () => void;
 }) {
   const [shareMsg, setShareMsg] = useState("");
-  const { creature, metrics, ascii_art, status_message, share_text } = display;
+  const { creature, metrics, share_text, status_message } = display;
   const moodColor = getMoodColor(creature.mood);
 
   const handleShare = async () => {
@@ -152,132 +121,185 @@ export function CreatureView({
         setTimeout(() => setShareMsg(""), 2000);
       }
     } catch {
-      // User cancelled share
+      // User cancelled
     }
   };
 
   return (
-    <div style={styles.container}>
-      {/* Tamagotchi */}
-      <TamagotchiShell
-        moodColor={moodColor}
-        onButtonA={onRefresh}
-        onButtonB={onRefresh}
-        onButtonC={handleShare}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "16px",
+        maxWidth: "400px",
+        width: "100%",
+      }}
+    >
+      {/* Main Card */}
+      <div
+        style={{
+          background: "#f5f0e3",
+          borderRadius: "24px",
+          padding: "24px",
+          width: "100%",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          position: "relative",
+        }}
       >
-        <PixelDog
-          mood={creature.mood}
-          evolutionStage={creature.evolution_stage}
-          isAlive={creature.is_alive}
-        />
-        <div
-          style={{
-            fontSize: "0.55rem",
-            fontFamily: "'Courier New', monospace",
-            color: "#4a5a3a",
-            marginTop: "6px",
-            fontWeight: "bold",
-            letterSpacing: "1px",
-            textTransform: "uppercase",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          {creature.name} — {creature.mood}
-        </div>
-      </TamagotchiShell>
-
-      {/* Status Message */}
-      <p style={styles.statusMessage}>{status_message}</p>
-
-      {/* HP Bar */}
-      <div style={{ width: "100%" }}>
+        {/* Top row: Level + Name | Hearts */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginBottom: "4px",
-            fontSize: "0.85rem",
+            alignItems: "flex-start",
+            marginBottom: "12px",
           }}
         >
-          <span>HP</span>
-          <span>{Math.round(creature.health_points)}/100</span>
+          {/* Level + Name */}
+          <div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+              <span
+                style={{
+                  fontSize: "2.4rem",
+                  fontWeight: "900",
+                  color: "#2a2520",
+                  lineHeight: 1,
+                  fontFamily: "'Courier New', monospace",
+                }}
+              >
+                {creature.streak_days}
+              </span>
+              <span
+                style={{
+                  fontSize: "0.9rem",
+                  color: "#8a7e6b",
+                  fontWeight: "bold",
+                }}
+              >
+                lvl
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: "0.85rem",
+                color: moodColor,
+                fontWeight: "bold",
+                marginTop: "2px",
+              }}
+            >
+              {creature.name}
+            </div>
+          </div>
+
+          {/* Hearts (HP) */}
+          <Hearts hp={creature.health_points} />
         </div>
-        <div style={styles.hpBar}>
-          <div
-            style={{
-              ...styles.hpFill,
-              width: `${creature.health_points}%`,
-              background: getHpColor(creature.health_points),
-            }}
+
+        {/* Creature */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "120px",
+            padding: "10px 0",
+          }}
+        >
+          <PixelDog
+            mood={creature.mood}
+            evolutionStage={creature.evolution_stage}
+            isAlive={creature.is_alive}
+          />
+        </div>
+
+        {/* Stat Bars */}
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "16px",
+          }}
+        >
+          <StatBar
+            label="Recovery"
+            value={metrics ? metrics.recovery : 0}
+            max={100}
+            color="#6bcb77"
+            icon="💚"
+          />
+          <StatBar
+            label="Sleep"
+            value={metrics ? metrics.sleep_score : 0}
+            max={100}
+            color="#4d96ff"
+            icon="😴"
+          />
+          <StatBar
+            label="Strain"
+            value={metrics ? metrics.strain : 0}
+            max={21}
+            color="#ff9f43"
+            icon="🔥"
           />
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Recovery</div>
-          <div style={{ ...styles.statValue, color: "#6bcb77" }}>
-            {metrics ? `${Math.round(metrics.recovery)}%` : "—"}
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Sleep</div>
-          <div style={{ ...styles.statValue, color: "#4d96ff" }}>
-            {metrics ? `${Math.round(metrics.sleep_score)}%` : "—"}
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Strain</div>
-          <div style={{ ...styles.statValue, color: "#ff9f43" }}>
-            {metrics ? metrics.strain.toFixed(1) : "—"}
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Streak</div>
-          <div style={{ ...styles.statValue, color: "#ffd93d" }}>
-            {creature.streak_days}d
-          </div>
-        </div>
-      </div>
+      {/* Status message */}
+      <p
+        style={{
+          fontStyle: "italic",
+          color: "#aaa",
+          fontSize: "0.9rem",
+          textAlign: "center",
+        }}
+      >
+        {status_message}
+      </p>
 
-      {/* Traits */}
-      {creature.traits.length > 0 && (
-        <div style={styles.traits}>
-          {creature.traits.map((t) => (
-            <span key={t} style={{ ...styles.trait, borderColor: moodColor }}>
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={styles.actions}>
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: "12px", width: "100%" }}>
         <button
+          onClick={onRefresh}
           style={{
-            ...styles.btn,
+            flex: 1,
+            padding: "12px",
+            fontSize: "0.9rem",
+            fontFamily: "'Courier New', monospace",
+            fontWeight: "bold",
+            border: "none",
+            borderRadius: "12px",
+            cursor: "pointer",
             background: "rgba(77, 150, 255, 0.2)",
             color: "#4d96ff",
           }}
-          onClick={onRefresh}
         >
           Refresh
         </button>
         <button
+          onClick={handleShare}
           style={{
-            ...styles.btn,
+            flex: 1,
+            padding: "12px",
+            fontSize: "0.9rem",
+            fontFamily: "'Courier New', monospace",
+            fontWeight: "bold",
+            border: "none",
+            borderRadius: "12px",
+            cursor: "pointer",
             background: "rgba(107, 203, 119, 0.2)",
             color: "#6bcb77",
           }}
-          onClick={handleShare}
         >
           Share
         </button>
       </div>
 
-      {shareMsg && <p style={styles.shareSuccess}>{shareMsg}</p>}
+      {shareMsg && (
+        <p style={{ color: "#6bcb77", fontSize: "0.85rem", textAlign: "center" }}>
+          {shareMsg}
+        </p>
+      )}
     </div>
   );
 }
