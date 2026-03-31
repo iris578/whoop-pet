@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useCreature } from "../hooks/useCreature.js";
 import { CreatureView } from "./CreatureView.js";
+import { PrivacyPolicy } from "./PrivacyPolicy.js";
 
 const styles: Record<string, React.CSSProperties> = {
   app: {
@@ -66,10 +67,51 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "0.85rem",
     textDecoration: "none",
   },
+  footer: {
+    marginTop: "40px",
+    paddingTop: "16px",
+    borderTop: "1px solid rgba(255,255,255,0.1)",
+    fontSize: "0.8rem",
+    color: "#666",
+  },
+  footerLink: {
+    color: "#888",
+    textDecoration: "none",
+  },
 };
 
+function useRoute() {
+  const [path, setPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const onPop = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const navigate = (to: string) => {
+    window.history.pushState({}, "", to);
+    setPath(to);
+  };
+
+  return { path, navigate };
+}
+
 export function App() {
+  const { path, navigate } = useRoute();
   const { display, status, isDemo, refresh } = useCreature();
+
+  if (path === "/privacy") {
+    return (
+      <div style={styles.app}>
+        <style>{`
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { margin: 0; }
+        `}</style>
+        <PrivacyPolicy />
+      </div>
+    );
+  }
 
   return (
     <div style={styles.app}>
@@ -130,6 +172,19 @@ export function App() {
           <CreatureView display={display} onRefresh={refresh} />
         </>
       )}
+
+      <footer style={styles.footer}>
+        <a
+          href="/privacy"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/privacy");
+          }}
+          style={styles.footerLink}
+        >
+          Privacy Policy
+        </a>
+      </footer>
     </div>
   );
 }
