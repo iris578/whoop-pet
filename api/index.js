@@ -390,8 +390,8 @@ function calculateMood(metrics) {
 }
 
 function calculateHP(metrics, previousHP) {
-  // Strain always adds HP (working out is always good)
-  var strainBonus = metrics.strain * 1.0;
+  // Strain adds HP only above 5 (baseline ~5 is passive daily activity)
+  var strainBonus = metrics.strain > 5 ? (metrics.strain - 5) * 1.0 : 0;
   // Sleep: adds if above 60%, subtracts if below
   var sleepDelta = (metrics.sleep_score - 60) * 0.3;
   // Recovery: adds if above 50%, subtracts if below
