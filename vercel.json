@@ -3,7 +3,9 @@
   "outputDirectory": "dist/client",
   "framework": null,
   "rewrites": [
-    { "source": "/auth/(.*)", "destination": "/api/auth" },
+    { "source": "/api/auth/:path*", "destination": "/api/auth" },
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/auth/:path*", "destination": "/api/auth" },
     { "source": "/((?!api|assets).*)", "destination": "/index.html" }
   ]
 }
