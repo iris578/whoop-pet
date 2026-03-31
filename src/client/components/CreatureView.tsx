@@ -162,10 +162,10 @@ export function CreatureView({
               <span
                 style={{
                   fontSize: "2.4rem",
-                  fontWeight: "900",
+                  fontWeight: "700",
                   color: "#2a2520",
                   lineHeight: 1,
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: "'Pixelify Sans', 'Courier New', monospace",
                 }}
               >
                 {creature.streak_days}
@@ -174,7 +174,8 @@ export function CreatureView({
                 style={{
                   fontSize: "0.9rem",
                   color: "#8a7e6b",
-                  fontWeight: "bold",
+                  fontWeight: "700",
+                  fontFamily: "'Pixelify Sans', 'Courier New', monospace",
                 }}
               >
                 lvl
@@ -184,7 +185,8 @@ export function CreatureView({
               style={{
                 fontSize: "0.85rem",
                 color: moodColor,
-                fontWeight: "bold",
+                fontWeight: "700",
+                fontFamily: "'Pixelify Sans', 'Courier New', monospace",
                 marginTop: "2px",
               }}
             >
