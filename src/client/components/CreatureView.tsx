@@ -43,59 +43,39 @@ function Hearts({ hp }: { hp: number }) {
 
 function StatBar({
   label,
-  value,
-  max,
   color,
+  bgColor,
   icon,
 }: {
   label: string;
-  value: number;
-  max: number;
   color: string;
+  bgColor: string;
   icon: string;
 }) {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
-    <div style={{ flex: 1 }}>
-      <div
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "6px",
+        background: bgColor,
+        borderRadius: "20px",
+        padding: "10px 8px",
+      }}
+    >
+      <span style={{ fontSize: "14px" }}>{icon}</span>
+      <span
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          marginBottom: "4px",
+          fontSize: "0.75rem",
+          fontWeight: "700",
+          color: color,
+          fontFamily: "'Pixelify Sans', 'Courier New', monospace",
         }}
       >
-        <span style={{ fontSize: "14px" }}>{icon}</span>
-        <span
-          style={{
-            fontSize: "0.65rem",
-            fontWeight: "bold",
-            color: "#8a7e6b",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          {label}
-        </span>
-      </div>
-      <div
-        style={{
-          height: "10px",
-          background: "#e8e0d0",
-          borderRadius: "5px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: color,
-            borderRadius: "5px",
-            transition: "width 0.5s ease",
-          }}
-        />
-      </div>
+        {label}
+      </span>
     </div>
   );
 }
@@ -221,23 +201,20 @@ export function CreatureView({
         >
           <StatBar
             label="Recovery"
-            value={metrics ? metrics.recovery : 0}
-            max={100}
-            color="#6bcb77"
+            color="#4a9e5c"
+            bgColor="#d5f5dc"
             icon="💚"
           />
           <StatBar
             label="Sleep"
-            value={metrics ? metrics.sleep_score : 0}
-            max={100}
-            color="#4d96ff"
+            color="#4a7ec4"
+            bgColor="#d5e5f5"
             icon="😴"
           />
           <StatBar
             label="Strain"
-            value={metrics ? metrics.strain : 0}
-            max={21}
-            color="#ff9f43"
+            color="#d48a30"
+            bgColor="#fef0d5"
             icon="🔥"
           />
         </div>
