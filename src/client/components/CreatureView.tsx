@@ -142,7 +142,7 @@ export function CreatureView({
           background: "#f5f0e3",
           borderRadius: "24px",
           padding: "24px",
-          paddingTop: "100px",
+          paddingTop: "60px",
           width: "100%",
           boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           position: "relative",
