@@ -295,14 +295,13 @@ async function fetchWhoopMetrics(user) {
   }
 
   var headers = { Authorization: "Bearer " + accessToken };
-  // Try multiple possible endpoint paths
+  var BASE = "https://api.prod.whoop.com/developer";
   var endpoints = {
-    recovery_v1: "https://api.prod.whoop.com/developer/v1/recovery?limit=1",
-    recovery_collection: "https://api.prod.whoop.com/developer/v1/recovery/collection",
-    sleep_v1: "https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1",
-    sleep_collection: "https://api.prod.whoop.com/developer/v1/activity/sleep/collection",
-    sleep_alt: "https://api.prod.whoop.com/developer/v1/sleep?limit=1",
-    cycle: "https://api.prod.whoop.com/developer/v1/cycle?limit=1",
+    cycle: BASE + "/v1/cycle?limit=1",
+    recovery_v2: BASE + "/v2/recovery?limit=1",
+    recovery_v1: BASE + "/v1/recovery?limit=1",
+    sleep_v2: BASE + "/v2/activity/sleep?limit=1",
+    sleep_v1: BASE + "/v1/activity/sleep?limit=1",
   };
 
   var responses = {};
@@ -323,46 +322,50 @@ async function fetchWhoopMetrics(user) {
 
   var recovery = null, sleepScore = null, strain = null, hrv = null, rhr = null;
 
-  // Parse recovery — try all variants
-  var recKeys = ["recovery_v1", "recovery_collection"];
+  // Helper to find first record from a response
+  function firstRecord(resp) {
+    if (!resp || !resp.ok || !resp.body) return null;
+    var b = resp.body;
+    var arr = b.records || b.data || (Array.isArray(b) ? b : null);
+    if (arr && arr[0]) return arr[0];
+    if (typeof b === "object" && b.score) return b;
+    return null;
+  }
+
+  // Parse recovery — try v2 then v1
+  var recKeys = ["recovery_v2", "recovery_v1"];
   for (var ri = 0; ri < recKeys.length; ri++) {
-    var recResp = responses[recKeys[ri]];
-    if (recResp && recResp.ok && recResp.body) {
-      var recBody = recResp.body;
-      var recArr = recBody.records || recBody.data || (Array.isArray(recBody) ? recBody : null);
-      var rec = recArr && recArr[0];
-      if (!rec && typeof recBody === "object" && recBody.score) rec = recBody;
-      if (rec && rec.score) {
-        recovery = rec.score.recovery_score;
-        hrv = rec.score.hrv_rmssd_milli;
-        rhr = rec.score.resting_heart_rate;
-        break;
-      }
+    var rec = firstRecord(responses[recKeys[ri]]);
+    if (rec && rec.score) {
+      recovery = rec.score.recovery_score;
+      hrv = rec.score.hrv_rmssd_milli;
+      rhr = rec.score.resting_heart_rate;
+      break;
     }
   }
 
-  // Parse sleep — try all variants
-  var sleepKeys = ["sleep_v1", "sleep_collection", "sleep_alt"];
+  // Parse sleep — try v2 then v1
+  var sleepKeys = ["sleep_v2", "sleep_v1"];
   for (var si = 0; si < sleepKeys.length; si++) {
-    var sleepResp = responses[sleepKeys[si]];
-    if (sleepResp && sleepResp.ok && sleepResp.body) {
-      var sleepBody = sleepResp.body;
-      var sleepArr = sleepBody.records || sleepBody.data || (Array.isArray(sleepBody) ? sleepBody : null);
-      var sleepRec = sleepArr && sleepArr[0];
-      if (!sleepRec && typeof sleepBody === "object" && sleepBody.score) sleepRec = sleepBody;
-      if (sleepRec && sleepRec.score) {
-        sleepScore = sleepRec.score.sleep_performance_percentage;
-        break;
-      }
+    var sleepRec = firstRecord(responses[sleepKeys[si]]);
+    if (sleepRec && sleepRec.score) {
+      sleepScore = sleepRec.score.sleep_performance_percentage;
+      break;
     }
   }
 
-  // Parse cycle (strain)
+  // Parse cycle (strain) — also try to get recovery from cycle if not found above
   var cycleBody = responses.cycle && responses.cycle.ok && responses.cycle.body;
   if (cycleBody) {
     var cycleRec = cycleBody.records && cycleBody.records[0];
     if (cycleRec && cycleRec.score) {
       strain = cycleRec.score.strain;
+    }
+    // In v2, recovery may be nested inside the cycle record
+    if (recovery == null && cycleRec && cycleRec.recovery && cycleRec.recovery.score) {
+      recovery = cycleRec.recovery.score.recovery_score;
+      hrv = cycleRec.recovery.score.hrv_rmssd_milli;
+      rhr = cycleRec.recovery.score.resting_heart_rate;
     }
   }
 
