@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { CreatureDisplay } from "../../shared/types.js";
+import { PixelDog } from "./PixelDog.js";
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -158,7 +159,11 @@ export function CreatureView({
     <div style={styles.container}>
       {/* Creature Display */}
       <div style={styles.creatureBox}>
-        <div style={styles.asciiArt}>{ascii_art}</div>
+        <PixelDog
+          mood={creature.mood}
+          evolutionStage={creature.evolution_stage}
+          isAlive={creature.is_alive}
+        />
         <div style={styles.name}>{creature.name}</div>
         <div style={{ ...styles.mood, color: moodColor }}>
           {creature.mood} | {creature.evolution_stage}
