@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
+
+function uuidv4(): string {
+  return crypto.randomUUID();
+}
 
 // ============================================================
 // Inline everything to avoid import resolution issues on Vercel
