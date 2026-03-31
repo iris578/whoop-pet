@@ -55,7 +55,7 @@ export function PrivacyPolicy() {
       <p style={styles.updated}>Last updated: March 31, 2026</p>
 
       <p style={styles.p}>
-        BodyPet ("we", "our", or "the app") is a digital companion powered by
+        Whoopy ("we", "our", or "the app") is a digital companion powered by
         your WHOOP health data. This Privacy Policy explains what data we
         collect, how we use it, and your rights.
       </p>
@@ -81,7 +81,7 @@ export function PrivacyPolicy() {
       <h2 style={styles.h2}>2. How We Use Your Data</h2>
       <p style={styles.p}>Your health data is used solely to:</p>
       <ul style={styles.ul}>
-        <li>Generate and update your BodyPet creature state</li>
+        <li>Generate and update your Whoopy creature state</li>
         <li>Calculate mood, health points, evolution stage, and traits</li>
         <li>Track your daily streak</li>
         <li>Create shareable status cards (only when you choose to share)</li>
@@ -110,7 +110,7 @@ export function PrivacyPolicy() {
 
       <h2 style={styles.h2}>5. WHOOP Integration</h2>
       <p style={styles.p}>
-        BodyPet connects to WHOOP via OAuth 2.0. You can revoke access at any
+        Whoopy connects to WHOOP via OAuth 2.0. You can revoke access at any
         time through your WHOOP account settings. Once revoked, we will no
         longer be able to fetch new data, and you may request deletion of any
         previously stored data.
@@ -125,7 +125,7 @@ export function PrivacyPolicy() {
 
       <h2 style={styles.h2}>7. Children's Privacy</h2>
       <p style={styles.p}>
-        BodyPet is not directed at children under 13. We do not knowingly
+        Whoopy is not directed at children under 13. We do not knowingly
         collect personal information from children under 13. If you believe a
         child has provided us with personal data, please contact us and we will
         delete it.
@@ -153,7 +153,7 @@ export function PrivacyPolicy() {
       <p style={styles.p}>
         We may update this Privacy Policy from time to time. Changes will be
         posted on this page with an updated "Last updated" date. Continued use
-        of BodyPet after changes constitutes acceptance of the revised policy.
+        of Whoopy after changes constitutes acceptance of the revised policy.
       </p>
 
       <h2 style={styles.h2}>11. Contact</h2>
@@ -170,7 +170,7 @@ export function PrivacyPolicy() {
       </p>
 
       <a href="/" style={styles.backLink}>
-        &larr; Back to BodyPet
+        &larr; Back to Whoopy
       </a>
     </div>
   );

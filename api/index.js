@@ -419,14 +419,14 @@ function getStatusMessage(creature) {
 function getShareText(creature, metrics) {
   var status = creature.is_alive ? creature.mood.toUpperCase() : "DEAD 💀";
   var lines = [
-    "🐾 My BodyPet is " + status + "!",
+    "🐾 My Whoopy is " + status + "!",
     "❤️ HP: " + Math.round(creature.health_points) + "/100",
     "🔥 Streak: " + creature.streak_days + " days",
     "📊 Recovery: " + Math.round(metrics.recovery) + "% | Sleep: " + Math.round(metrics.sleep_score) + "% | Strain: " + metrics.strain.toFixed(1),
     "🧬 Stage: " + creature.evolution_stage,
   ];
   if (creature.traits.length > 0) lines.push("✨ Traits: " + creature.traits.join(", "));
-  lines.push("", "Get your own BodyPet! 🐣");
+  lines.push("", "Get your own Whoopy! 🐣");
   return lines.join("\n");
 }
 
@@ -486,7 +486,7 @@ async function updateCreature(userId, date) {
     id: (previous && previous.id) || genId(),
     user_id: userId,
     date: date,
-    name: (previous && previous.name) || "BodyPet",
+    name: (previous && previous.name) || "Whoopy",
     mood: mood,
     evolution_stage: calculateEvolution(streak),
     health_points: hp,

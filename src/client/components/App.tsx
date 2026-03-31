@@ -129,7 +129,7 @@ export function App() {
       `}</style>
 
       <header style={styles.header}>
-        <h1 style={styles.title}>BodyPet</h1>
+        <h1 style={styles.title}>Whoopy</h1>
         <p style={styles.subtitle}>Your WHOOP-powered Tamagotchi</p>
       </header>
 

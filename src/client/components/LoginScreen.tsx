@@ -39,7 +39,7 @@ export function LoginScreen({ authUrl }: { authUrl: string }) {
       <div style={styles.egg}>🥚</div>
       <p style={styles.text}>
         A mysterious egg is waiting for you...<br />
-        Connect your WHOOP to hatch your BodyPet and watch it evolve
+        Connect your WHOOP to hatch your Whoopy and watch it evolve
         based on your real health data!
       </p>
       <a href={authUrl} style={{ textDecoration: "none" }}>
