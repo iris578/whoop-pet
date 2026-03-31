@@ -295,9 +295,13 @@ async function fetchWhoopMetrics(user) {
   }
 
   var headers = { Authorization: "Bearer " + accessToken };
+  // Try multiple possible endpoint paths
   var endpoints = {
-    recovery: "https://api.prod.whoop.com/developer/v1/recovery?limit=1",
-    sleep: "https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1",
+    recovery_v1: "https://api.prod.whoop.com/developer/v1/recovery?limit=1",
+    recovery_collection: "https://api.prod.whoop.com/developer/v1/recovery/collection",
+    sleep_v1: "https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1",
+    sleep_collection: "https://api.prod.whoop.com/developer/v1/activity/sleep/collection",
+    sleep_alt: "https://api.prod.whoop.com/developer/v1/sleep?limit=1",
     cycle: "https://api.prod.whoop.com/developer/v1/cycle?limit=1",
   };
 
@@ -319,23 +323,37 @@ async function fetchWhoopMetrics(user) {
 
   var recovery = null, sleepScore = null, strain = null, hrv = null, rhr = null;
 
-  // Parse recovery
-  var recBody = responses.recovery && responses.recovery.ok && responses.recovery.body;
-  if (recBody) {
-    var rec = recBody.records && recBody.records[0];
-    if (rec && rec.score) {
-      recovery = rec.score.recovery_score;
-      hrv = rec.score.hrv_rmssd_milli;
-      rhr = rec.score.resting_heart_rate;
+  // Parse recovery — try all variants
+  var recKeys = ["recovery_v1", "recovery_collection"];
+  for (var ri = 0; ri < recKeys.length; ri++) {
+    var recResp = responses[recKeys[ri]];
+    if (recResp && recResp.ok && recResp.body) {
+      var recBody = recResp.body;
+      var recArr = recBody.records || recBody.data || (Array.isArray(recBody) ? recBody : null);
+      var rec = recArr && recArr[0];
+      if (!rec && typeof recBody === "object" && recBody.score) rec = recBody;
+      if (rec && rec.score) {
+        recovery = rec.score.recovery_score;
+        hrv = rec.score.hrv_rmssd_milli;
+        rhr = rec.score.resting_heart_rate;
+        break;
+      }
     }
   }
 
-  // Parse sleep
-  var sleepBody = responses.sleep && responses.sleep.ok && responses.sleep.body;
-  if (sleepBody) {
-    var sleepRec = sleepBody.records && sleepBody.records[0];
-    if (sleepRec && sleepRec.score) {
-      sleepScore = sleepRec.score.sleep_performance_percentage;
+  // Parse sleep — try all variants
+  var sleepKeys = ["sleep_v1", "sleep_collection", "sleep_alt"];
+  for (var si = 0; si < sleepKeys.length; si++) {
+    var sleepResp = responses[sleepKeys[si]];
+    if (sleepResp && sleepResp.ok && sleepResp.body) {
+      var sleepBody = sleepResp.body;
+      var sleepArr = sleepBody.records || sleepBody.data || (Array.isArray(sleepBody) ? sleepBody : null);
+      var sleepRec = sleepArr && sleepArr[0];
+      if (!sleepRec && typeof sleepBody === "object" && sleepBody.score) sleepRec = sleepBody;
+      if (sleepRec && sleepRec.score) {
+        sleepScore = sleepRec.score.sleep_performance_percentage;
+        break;
+      }
     }
   }
 
