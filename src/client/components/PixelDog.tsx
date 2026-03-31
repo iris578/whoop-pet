@@ -156,44 +156,65 @@ const DOG_DEAD: string[] = [
   ".....xxxx....xxxx........",
 ];
 
-// Small egg version
-const EGG_HAPPY: string[] = [
-  "......xxxxxxxx..........",
-  "....xx@@@@@@@@xx........",
-  "...x@@@@@@@@@@@@x.......",
-  "..x@@@@@@@@@@@@@@x......",
-  "..x@@@@@@@@@@@@@@x......",
-  "..x@@@@@xxxx@@@@@x......",
-  "..x@@@@@@@@@@@@@@x......",
-  "...x@@@@@@@@@@@@x.......",
-  "....xx@@@@@@@@xx........",
-  "......xxxxxxxx..........",
+// Big clear egg with cracks and spots
+const EGG: string[] = [
+  "........xxxxxxxx........",
+  "......xx@@@@@@@@xx......",
+  ".....x@@@@@@@@@@@@x.....",
+  "....x@@@@@@..@@@@@@x....",
+  "...x@@@@@@@@@@.@@@@@x...",
+  "...x@@@@@@@@@@@@@@@.x...",
+  "...x@@@@.@@@@@@@@@@@@x..",
+  "...x@@@@@@@@@@@.@@@@@x..",
+  "...x@@@@@@@@@@@@@@@@@@x.",
+  "...x@@@@@@@@@@@@@@@@@@x.",
+  "...x@@@@.@@@@@@@.@@@@x..",
+  "....x@@@@@@xxx@@@@@@x...",
+  "....x@@@@@x..x@@@@@x...",
+  ".....x@@@@x..x@@@@x....",
+  "......x@@@@xx@@@@x.....",
+  ".......x@@@@@@@@x......",
+  "........xxxxxxxx........",
 ];
 
 const EGG_THRIVING: string[] = [
-  "..g...xxxxxxxx....g.....",
-  "....xx@@@@@@@@xx........",
-  "...x@@@@@@@@@@@@x.......",
-  "..x@@@@@@@@@@@@@@x......",
-  "..x@@@@@@@@@@@@@@x......",
-  "..x@@@@@xxxx@@@@@x......",
-  "..x@@@@@@@@@@@@@@x......",
-  "...x@@@@@@@@@@@@x.......",
-  "....xx@@@@@@@@xx........",
-  "......xxxxxxxx..........",
+  "...g....xxxxxxxx....g...",
+  "......xx@@@@@@@@xx......",
+  ".....x@@@@@@@@@@@@x.....",
+  "....x@@@@@@..@@@@@@x....",
+  "...x@@@@@@@@@@.@@@@@x...",
+  "...x@@@@@@@@@@@@@@@.x...",
+  "...x@@@@.@@@@@@@@@@@@x..",
+  "...x@@@@@@@@@@@.@@@@@x..",
+  "...x@@@@@@@@@@@@@@@@@@x.",
+  "...x@@@@@@@@@@@@@@@@@@x.",
+  "...x@@@@.@@@@@@@.@@@@x..",
+  "....x@@@@@@xxx@@@@@@x...",
+  "....x@@@@@x..x@@@@@x...",
+  ".....x@@@@x..x@@@@x....",
+  "......x@@@@xx@@@@x.....",
+  ".......x@@@@@@@@x......",
+  "........xxxxxxxx........",
 ];
 
 const EGG_DEAD: string[] = [
-  "......xxxxxxxx..........",
-  "....xxzzzzzzzzxx........",
-  "...xzzzzzzzzzzzzx.......",
-  "..xzzzzzzzzzzzzzzx......",
-  "..xzzzzzzzzzzzzzzx......",
-  "..xzzzzzxxxxzzzzzx......",
-  "..xzzzzzzzzzzzzzzx......",
-  "...xzzzzzzzzzzzzx.......",
-  "....xxzzzzzzzzxx........",
-  "......xxxxxxxx..........",
+  "........xxxxxxxx........",
+  "......xxzzzzzzzzxx......",
+  ".....xzzzzzzzzzzzzx.....",
+  "....xzzzzzz..zzzzzzx....",
+  "...xzzzzzzzzzz.zzzzzx...",
+  "...xzzzzzzzzzzzzzzz.x...",
+  "...xzzzz.zzzzzzzzzzzzx..",
+  "...xzzzzzzzzzzzz.zzzzx..",
+  "...xzzzzzzzzzzzzzzzzzzx.",
+  "...xzzzzzzzzzzzzzzzzzzx.",
+  "...xzzzz.zzzzzzz.zzzzx..",
+  "....xzzzzzzxxxzzzzzzx...",
+  "....xzzzzzx..xzzzzzx...",
+  ".....xzzzzx..xzzzzx....",
+  "......xzzzzxxzzzzx.....",
+  ".......xzzzzzzzzx......",
+  "........xxxxxxxx........",
 ];
 
 const DOG_MOODS: Record<Mood, string[]> = {
@@ -205,8 +226,17 @@ const DOG_MOODS: Record<Mood, string[]> = {
   dead: DOG_DEAD,
 };
 
+const EGG_MOODS: Record<Mood, string[]> = {
+  thriving: EGG_THRIVING,
+  happy: EGG,
+  neutral: EGG,
+  tired: EGG,
+  struggling: EGG,
+  dead: EGG_DEAD,
+};
+
 const DOGS: Record<Stage, Record<Mood, string[]>> = {
-  egg: DOG_MOODS,
+  egg: EGG_MOODS,
   baby: DOG_MOODS,
   teen: DOG_MOODS,
   adult: DOG_MOODS,
