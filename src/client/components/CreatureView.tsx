@@ -142,69 +142,66 @@ export function CreatureView({
           background: "#f5f0e3",
           borderRadius: "24px",
           padding: "24px",
+          paddingTop: "100px",
           width: "100%",
           boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        {/* Top row: Level + Name | Hearts */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "12px",
-          }}
-        >
-          {/* Level + Name */}
-          <div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "2.4rem",
-                  fontWeight: "700",
-                  color: "#2a2520",
-                  lineHeight: 1,
-                  fontFamily: "'Pixelify Sans', 'Courier New', monospace",
-                }}
-              >
-                {creature.streak_days}
-              </span>
-              <span
-                style={{
-                  fontSize: "0.9rem",
-                  color: "#8a7e6b",
-                  fontWeight: "700",
-                  fontFamily: "'Pixelify Sans', 'Courier New', monospace",
-                }}
-              >
-                lvl
-              </span>
-            </div>
-            <div
+        {/* Level + Name (top-left, absolute) */}
+        <div style={{ position: "absolute", top: "24px", left: "24px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+            <span
               style={{
-                fontSize: "0.85rem",
-                color: moodColor,
+                fontSize: "2.4rem",
                 fontWeight: "700",
+                color: "#2a2520",
+                lineHeight: 1,
                 fontFamily: "'Pixelify Sans', 'Courier New', monospace",
-                marginTop: "2px",
               }}
             >
-              {creature.name}
-            </div>
+              {creature.streak_days}
+            </span>
+            <span
+              style={{
+                fontSize: "0.9rem",
+                color: "#8a7e6b",
+                fontWeight: "700",
+                fontFamily: "'Pixelify Sans', 'Courier New', monospace",
+              }}
+            >
+              lvl
+            </span>
           </div>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: moodColor,
+              fontWeight: "700",
+              fontFamily: "'Pixelify Sans', 'Courier New', monospace",
+              marginTop: "2px",
+            }}
+          >
+            {creature.name}
+          </div>
+        </div>
 
-          {/* Hearts (HP) */}
+        {/* Hearts (top-right, absolute) */}
+        <div style={{ position: "absolute", top: "24px", right: "24px" }}>
           <Hearts hp={creature.health_points} />
         </div>
 
-        {/* Creature */}
+        {/* Creature (centered horizontally and vertically) */}
         <div
           style={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            padding: "4px 0",
+            width: "100%",
+            margin: "24px 0",
           }}
         >
           <PixelDog
