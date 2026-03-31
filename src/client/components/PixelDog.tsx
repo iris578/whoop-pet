@@ -22,6 +22,8 @@ const PALETTE: Record<string, string> = {
   "Z": "#888078", // dark gray (dead shadow)
   "b": "#6090d0", // blue (zzz)
   "c": "#d0a060", // collar
+  "s": "#7dd8e8", // light cyan (egg spot)
+  "S": "#4da8d0", // blue (egg spot)
 };
 
 type Mood = "thriving" | "happy" | "neutral" | "tired" | "struggling" | "dead";
@@ -156,65 +158,69 @@ const DOG_DEAD: string[] = [
   ".....xxxx....xxxx........",
 ];
 
-// Big clear egg with cracks and spots
+// White egg with blue/cyan spots, tall oval, black outline
+// s = light cyan spot, S = blue spot, w = white shell, W = light shadow
 const EGG: string[] = [
+  "..........xxxx..........",
   "........xxxxxxxx........",
-  "......xx@@@@@@@@xx......",
-  ".....x@@@@@@@@@@@@x.....",
-  "....x@@@@@@..@@@@@@x....",
-  "...x@@@@@@@@@@.@@@@@x...",
-  "...x@@@@@@@@@@@@@@@.x...",
-  "...x@@@@.@@@@@@@@@@@@x..",
-  "...x@@@@@@@@@@@.@@@@@x..",
-  "...x@@@@@@@@@@@@@@@@@@x.",
-  "...x@@@@@@@@@@@@@@@@@@x.",
-  "...x@@@@.@@@@@@@.@@@@x..",
-  "....x@@@@@@xxx@@@@@@x...",
-  "....x@@@@@x..x@@@@@x...",
-  ".....x@@@@x..x@@@@x....",
-  "......x@@@@xx@@@@x.....",
-  ".......x@@@@@@@@x......",
+  ".......xxwwwwwwxx.......",
+  "......xwwwwwwswwwx......",
+  ".....xwwwwwwwsswwwx.....",
+  ".....xwwwSwwwwwwwwx.....",
+  "....xwwwSSwwwwwwwwwx....",
+  "....xwwwwwwwwSwwwwwx....",
+  "....xwwwwwwwSSwwwwwx....",
+  "....xwwwwSwwwwwwwwwx....",
+  "....xwwwSSwwwwwSwwwx....",
+  "....xwwwwwwwwwSSwwwx....",
+  ".....xwwwwwwwwwwwwx.....",
+  ".....xWWWWWWWWWWWWx.....",
+  "......xWWWWWWWWWWx......",
+  ".......xxWWWWWWxx.......",
   "........xxxxxxxx........",
+  ".........xxxxxx..........",
 ];
 
 const EGG_THRIVING: string[] = [
-  "...g....xxxxxxxx....g...",
-  "......xx@@@@@@@@xx......",
-  ".....x@@@@@@@@@@@@x.....",
-  "....x@@@@@@..@@@@@@x....",
-  "...x@@@@@@@@@@.@@@@@x...",
-  "...x@@@@@@@@@@@@@@@.x...",
-  "...x@@@@.@@@@@@@@@@@@x..",
-  "...x@@@@@@@@@@@.@@@@@x..",
-  "...x@@@@@@@@@@@@@@@@@@x.",
-  "...x@@@@@@@@@@@@@@@@@@x.",
-  "...x@@@@.@@@@@@@.@@@@x..",
-  "....x@@@@@@xxx@@@@@@x...",
-  "....x@@@@@x..x@@@@@x...",
-  ".....x@@@@x..x@@@@x....",
-  "......x@@@@xx@@@@x.....",
-  ".......x@@@@@@@@x......",
+  "..g.......xxxx......g...",
   "........xxxxxxxx........",
+  ".......xxwwwwwwxx.......",
+  "......xwwwwwwswwwx......",
+  ".....xwwwwwwwsswwwx.....",
+  ".....xwwwSwwwwwwwwx.....",
+  "....xwwwSSwwwwwwwwwx....",
+  "....xwwwwwwwwSwwwwwx....",
+  "....xwwwwwwwSSwwwwwx....",
+  "....xwwwwSwwwwwwwwwx....",
+  "....xwwwSSwwwwwSwwwx....",
+  "....xwwwwwwwwwSSwwwx....",
+  ".....xwwwwwwwwwwwwx.....",
+  ".....xWWWWWWWWWWWWx.....",
+  "......xWWWWWWWWWWx......",
+  ".......xxWWWWWWxx.......",
+  "........xxxxxxxx........",
+  ".........xxxxxx..........",
 ];
 
 const EGG_DEAD: string[] = [
+  "..........xxxx..........",
   "........xxxxxxxx........",
-  "......xxzzzzzzzzxx......",
+  ".......xxzzzzzzxx.......",
+  "......xzzzzzzzzzzx......",
   ".....xzzzzzzzzzzzzx.....",
-  "....xzzzzzz..zzzzzzx....",
-  "...xzzzzzzzzzz.zzzzzx...",
-  "...xzzzzzzzzzzzzzzz.x...",
-  "...xzzzz.zzzzzzzzzzzzx..",
-  "...xzzzzzzzzzzzz.zzzzx..",
-  "...xzzzzzzzzzzzzzzzzzzx.",
-  "...xzzzzzzzzzzzzzzzzzzx.",
-  "...xzzzz.zzzzzzz.zzzzx..",
-  "....xzzzzzzxxxzzzzzzx...",
-  "....xzzzzzx..xzzzzzx...",
-  ".....xzzzzx..xzzzzx....",
-  "......xzzzzxxzzzzx.....",
-  ".......xzzzzzzzzx......",
+  ".....xzzzzzzzzzzzzx.....",
+  "....xzzzzzzzzzzzzzzx....",
+  "....xzzzzzzzzzzzzzzx....",
+  "....xzzzzzzzzzzzzzzx....",
+  "....xzzzzzzzzzzzzzzx....",
+  "....xzzzzzzzzzzzzzzx....",
+  "....xzzzzzzzzzzzzzzx....",
+  ".....xzzzzzzzzzzzzx.....",
+  ".....xZZZZZZZZZZZZx.....",
+  "......xZZZZZZZZZZx......",
+  ".......xxZZZZZZxx.......",
   "........xxxxxxxx........",
+  ".........xxxxxx..........",
 ];
 
 const DOG_MOODS: Record<Mood, string[]> = {
